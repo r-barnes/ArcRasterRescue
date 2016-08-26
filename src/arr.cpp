@@ -185,7 +185,7 @@ void BaseTable::getFlags(){
   }
 }
 
-bool BaseTable::skipField(const Field &field){
+bool BaseTable::skipField(const Field &field, uint8_t &ifield_for_flag_test){
   if(has_flags && field.nullable){
     uint8_t test = (flags[ifield_for_flag_test >> 3] & (1 << (ifield_for_flag_test % 8)));
     ifield_for_flag_test++;
@@ -441,8 +441,9 @@ MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
 
     getFlags();
 
+    uint8_t ifield_for_flag_test = 0;
     for(unsigned int fi=0;fi<fields.size();fi++){
-      if(skipField(fields[fi]))
+      if(skipField(fields[fi],ifield_for_flag_test))
         continue;
 
       if(fields[fi].type==1){
@@ -520,8 +521,9 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
 
     getFlags();
 
+    uint8_t ifield_for_flag_test = 0;
     for(unsigned int fi=0;fi<fields.size();fi++){
-      if(skipField(fields[fi]))
+      if(skipField(fields[fi], ifield_for_flag_test))
         continue;
 
       if(fields[fi].type==1){
@@ -530,6 +532,12 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
           block_width = val;
         else if(fields[fi].name=="block_height")
           block_height = val;
+
+      } else if(fields[fi].type == 4 || fields[fi].type == 12){
+        auto length = ReadVarUint(gdbtable);
+        auto val    = ReadBytes(gdbtable, length);
+      } else if(fields[fi].type==3){
+        auto val = ReadFloat64(gdbtable);
       }
     }
   }
@@ -697,7 +705,7 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
     auto feature_offset = ReadInt32(gdbtablx);
 
-    std::cerr<<"f: "<<f<<std::endl;
+    std::cerr<<"\n\n\nf: "<<f<<std::endl;
 
     if(feature_offset==0)
       continue;
@@ -712,24 +720,36 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
     int col_nbr    = -1;
     int rrd_factor = -1;
 
-    for(unsigned int fi=0;fi<fields.size();fi++){
-      if(skipField(fields[fi]))
-        continue;
+    std::cerr<<"Fields.size = "<<fields.size()<<std::endl;
 
-      fields[fi].print();
+    uint8_t ifield_for_flag_test = 0;
+    for(unsigned int fi=0;fi<fields.size();fi++){
+      if(skipField(fields[fi], ifield_for_flag_test))
+        continue;
 
       if(fields[fi].type==1){
         auto val = ReadInt32(gdbtable);
+        std::cout<<fields[fi].name<<" = "<<val<<std::endl;
         if(fields[fi].name=="col_nbr")
           col_nbr = val;
         else if(fields[fi].name=="row_nbr")
           row_nbr = val;
         else if(fields[fi].name=="rrd_factor")
           rrd_factor = val;
+      } else if(fields[fi].type == 4 || fields[fi].type == 12){
+        auto length = ReadVarUint(gdbtable);
+        auto val    = ReadBytes(gdbtable, length);
+        std::cout<<fields[fi].name<<" = ";
+        for(auto &v: val)
+          std::cout<<v<<" ";
+        std::cout<<std::endl;
       } else if(fields[fi].type==8){ //Appears to be where raster data is stored
         std::cerr<<"HERE!"<<std::endl;
 
         auto length = ReadVarUint(gdbtable);
+
+        std::cerr<<"Length = "<<length<<std::endl;
+
         //Skip that which is not a base layer
         if(rrd_factor!=0){
           AdvanceBytes(gdbtable, length);
@@ -742,6 +762,10 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
         std::vector<uint8_t> decompressed(120000);
 
         Zinflate(val, decompressed);
+
+        std::cerr<<"decompressed_size = "<<decompressed.size()<<std::endl;
+
+        std::cerr<<sizeof(float)<<" "<<r.rb->block_width<<" "<<r.rb->block_height<<std::endl;
 
         //Drop trailer
         //TODO: Don't assume 128x128 block size with 4 byte data

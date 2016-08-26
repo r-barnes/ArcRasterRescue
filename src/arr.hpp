@@ -66,14 +66,13 @@ class BaseTable {
   bool has_flags;
   int nullable_fields;
 
-  uint8_t ifield_for_flag_test = 0;
   std::vector<uint8_t> flags;
 
   std::string getFilenameX(std::string filename);
 
   void getFlags();
 
-  bool skipField(const Field &field);
+  bool skipField(const Field &field, uint8_t &ifield_for_flag_test);
 
   BaseTable(std::string filename);
 };
