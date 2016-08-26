@@ -18,7 +18,7 @@ int main(int argc, char **argv){
     return 0;
   } else if(argc==3){
     int raster_num = std::stoi(argv[2]);
-    Raster raster(basename, raster_num);
+    Raster raster(basename, mt.rasters[raster_num].second);
   }
 
   return 0;

@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
-#include "richdem/common/Array2D.hpp"
 #include "arr.hpp"
 
 template<class T>
@@ -237,13 +236,13 @@ BaseTable::BaseTable(std::string filename){
 
   auto nfields = GetCount(gdbtable);
 
-  std::cout<<"nfeaturesx         = "<<nfeaturesx           <<"\n";
-  std::cout<<"size_tablx_offsets = "<<size_tablx_offsets   <<"\n";
-  std::cout<<"nfeatures          = "<<nfeatures            <<"\n";
-  std::cout<<"header_offset      = "<<header_offset        <<"\n";
-  std::cout<<"header_length      = "<<header_length        <<"\n";
-  std::cout<<"layer_geom_type    = "<<(int)layer_geom_type <<"\n";
-  std::cout<<"nfields            = "<<nfields              <<"\n";
+  // std::cout<<"nfeaturesx         = "<<nfeaturesx           <<"\n";
+  // std::cout<<"size_tablx_offsets = "<<size_tablx_offsets   <<"\n";
+  // std::cout<<"nfeatures          = "<<nfeatures            <<"\n";
+  // std::cout<<"header_offset      = "<<header_offset        <<"\n";
+  // std::cout<<"header_length      = "<<header_length        <<"\n";
+  // std::cout<<"layer_geom_type    = "<<(int)layer_geom_type <<"\n";
+  // std::cout<<"nfields            = "<<nfields              <<"\n";
 
   has_flags       = false;
   nullable_fields = 0;
@@ -420,8 +419,8 @@ BaseTable::BaseTable(std::string filename){
     if(field.type!=6)
       fields.push_back(field);
 
-    std::cout<<"\n\nField Number = "<<(fields.size()-1)<<"\n";
-    field.print();
+    //std::cout<<"\n\nField Number = "<<(fields.size()-1)<<"\n";
+    //field.print();
   }
 
 
@@ -685,13 +684,20 @@ Raster::~Raster(){
 }
 
 
-RasterData::RasterData(std::string filename, const Raster &r) : BaseTable(filename){
+template<class T>
+RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(filename){
   //TODO: Initialize with NoData value
-  //geodata.resize(
+  geodata.resize(10000,10000);
+
+  std::cerr<<"Opening Raster Data as "<<filename<<std::endl;
+
+  std::cerr<<"Raster data"<<std::endl;
 
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
     auto feature_offset = ReadInt32(gdbtablx);
+
+    std::cerr<<"f: "<<f<<std::endl;
 
     if(feature_offset==0)
       continue;
@@ -710,6 +716,8 @@ RasterData::RasterData(std::string filename, const Raster &r) : BaseTable(filena
       if(skipField(fields[fi]))
         continue;
 
+      fields[fi].print();
+
       if(fields[fi].type==1){
         auto val = ReadInt32(gdbtable);
         if(fields[fi].name=="col_nbr")
@@ -719,6 +727,8 @@ RasterData::RasterData(std::string filename, const Raster &r) : BaseTable(filena
         else if(fields[fi].name=="rrd_factor")
           rrd_factor = val;
       } else if(fields[fi].type==8){ //Appears to be where raster data is stored
+        std::cerr<<"HERE!"<<std::endl;
+
         auto length = ReadVarUint(gdbtable);
         //Skip that which is not a base layer
         if(rrd_factor!=0){
@@ -758,7 +768,11 @@ RasterData::RasterData(std::string filename, const Raster &r) : BaseTable(filena
         for(int y=0;y<r.rb->block_height;y++)
         for(int x=0;x<r.rb->block_width;x++)
           geodata( col_nbr*(r.rb->block_width)+x, row_nbr*(r.rb->block_height)+y ) = unpacked[y*(r.rb->block_width)+x];
+      } else {
+        std::cerr<<"Unrecognised field type: "<<(int)fields[fi].type<<std::endl;
       }
     }
   }
+
+  geodata.saveGDAL("/z/out.tif");
 }
