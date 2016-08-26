@@ -18,14 +18,18 @@ Requirements
 ============
 
 *C++11
+
 *The [RichDEM](https://github.com/r-barnes/richdem) library ("dev" branch)
 
 TODO
 ====
 
 *Adapt for data types other than float.
+
 *Improve endian checking.
+
 *Check for other kinds of compressions.
+
 *User-friendliate it all.
 
 Credits
