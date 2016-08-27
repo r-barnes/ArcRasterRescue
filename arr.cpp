@@ -5,8 +5,10 @@
 #include <string>
 #include <iomanip>
 #include <fstream>
+#include <iostream>
 #include <vector>
 #include "arr.hpp"
+
 
 template<class T>
 T ReadThing(std::ifstream &fin){
@@ -676,28 +678,10 @@ set([9, 3, 6, 7])
 RasterProjection::RasterProjection(std::string filename) : BaseTable(filename){}
 
 
-std::string Raster::hexify(int raster_num){
-  std::stringstream ss;
-  ss << "a" << std::setfill('0') << std::setw(8) << std::hex << raster_num << ".gdbtable";
-  return ss.str();
-}
-
-Raster::Raster(std::string basename, int raster_num){
-  rb = new RasterBase       (basename+hexify(raster_num+0));
-  rp = new RasterProjection (basename+hexify(raster_num+1));
-  rd = new RasterData<float>(basename+hexify(raster_num+4), *this);
-}
-
-Raster::~Raster(){
-  delete rb;
-  delete rp;
-}
-
-
 template<class T>
 RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(filename){
   //TODO: Initialize with NoData value
-  geodata.resize(10000,10000);
+  resize(10000,10000);
 
   std::cerr<<"Opening Raster Data as "<<filename<<std::endl;
 
@@ -802,12 +786,53 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
         //Save data to the numpy array
         for(int y=0;y<r.rb->block_height;y++)
         for(int x=0;x<r.rb->block_width;x++)
-          geodata( col_nbr*(r.rb->block_width)+x, row_nbr*(r.rb->block_height)+y ) = unpacked[y*(r.rb->block_width)+x];
+          operator()( col_nbr*(r.rb->block_width)+x, row_nbr*(r.rb->block_height)+y ) = unpacked[y*(r.rb->block_width)+x];
       } else {
         std::cerr<<"Unrecognised field type: "<<(int)fields[fi].type<<std::endl;
       }
     }
   }
+}
 
-  geodata.saveGDAL("/z/out.tif");
+
+
+template<class T>
+void RasterData<T>::resize(int width, int height){
+  this->width  = width;
+  this->height = height;
+  geodata.resize(width*height);
+}
+
+template<class T>
+T& RasterData<T>::operator()(int x, int y){
+  return geodata[y*width+x];
+}
+
+template<class T>
+T RasterData<T>::operator()(int x, int y) const {
+  return geodata[y*width+x];
+}
+
+template<class T>
+void RasterData<T>::setAll(T val){
+  std::fill(geodata.begin(),geodata.end(),val);
+}
+
+
+
+std::string Raster::hexify(int raster_num){
+  std::stringstream ss;
+  ss << "a" << std::setfill('0') << std::setw(8) << std::hex << raster_num << ".gdbtable";
+  return ss.str();
+}
+
+Raster::Raster(std::string basename, int raster_num){
+  rb = new RasterBase       (basename+hexify(raster_num+0));
+  rp = new RasterProjection (basename+hexify(raster_num+1));
+  rd = new RasterData<float>(basename+hexify(raster_num+4), *this);
+}
+
+Raster::~Raster(){
+  delete rb;
+  delete rp;
 }

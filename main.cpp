@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include "arr.hpp"
 
 int main(int argc, char **argv){
@@ -24,11 +25,13 @@ int main(int argc, char **argv){
       std::cerr<<"No rasters found!"<<std::endl;
       return -1;
     }
-    if(raster_num<0 || raster_num>=mt.rasters.size()){
+    if(raster_num>=mt.rasters.size()){ //Note: Don't need <0 check because raster_num is unsigned
       std::cerr<<"Invalid raster number! Must be 0-"<<(mt.rasters.size()-1)<<"."<<std::endl;
       return -1;
     }
     Raster raster(basename, mt.rasters.at(raster_num).second);
+
+    raster.rd->save("/z/bob.tif","",false);
   }
 
   return 0;
