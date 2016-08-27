@@ -448,11 +448,13 @@ MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
 
       if(fields[fi].type==1){
         auto val = ReadInt32(gdbtable);
-      } else if(fields[fi].type == 4 || fields[fi].type == 12){ //String
+      } else if(fields[fi].type == 10 || fields[fi].type == 11){ //10=DatasetGUID
+        auto val = ReadBytes(gdbtable, 16);
+      } else if(fields[fi].type == 4 || fields[fi].type == 12){  //String
         auto length = ReadVarUint(gdbtable);
         auto val    = ReadBytesAsString(gdbtable, length);
-        std::cerr<<f<<" "<<val<<std::endl;
-        auto loc = val.find("fras_ras_");
+        auto loc    = val.find("fras_ras_");
+        std::cerr<<val<<" ("<<std::hex<<f<<")"<<std::endl;
         if(loc!=std::string::npos)
           rasters.emplace_back(val.substr(9), f-1);
       }
@@ -757,6 +759,15 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
         }
 
         auto val = ReadBytes(gdbtable, length);
+
+        if(val[0]!=120 || val[1]!=156){ //Magic Bytes indicating zlib
+          std::cerr<<"Unrecognised data compression format. Only zlib is available!"<<std::endl;
+          std::cerr<<"Initial bytes: ";
+          for(uint8_t i=0;i<10;i++)
+            std::cerr<<(int)val[i]<<" ";
+          std::cerr<<std::endl;
+          throw std::runtime_error("Unrecognised data compression format. Only zlib is available!");
+        }
 
         //Decompress data (TODO: Look for other compression formats)
         std::vector<uint8_t> decompressed(120000);
