@@ -92,9 +92,13 @@ class MasterTable : public BaseTable {
 };
 
 class RasterBase : public BaseTable {
+ private:
+  std::string bandTypeToDataTypeString(std::vector< uint8_t > &band_types) const;
  public:
-  int32_t block_width;
-  int32_t block_height;
+  int32_t         block_width;
+  int32_t         block_height;
+  std::vector< uint8_t > band_types;
+  std::string     data_type;
 
   RasterBase(std::string filename);
 };
@@ -111,7 +115,7 @@ class RasterData : public BaseTable {
  public:
   std::vector<T> geodata;
 
-  RasterData(std::string filename, const Raster &r);
+  RasterData(std::string filename, const RasterBase &rb);
 
   T   no_data;
   std::vector<double> geotransform;
@@ -146,6 +150,8 @@ class RasterData : public BaseTable {
   }
 
   void save(std::string filename, std::string metadata, bool compress) {
+    GDALAllRegister();
+
     char **papszOptions = NULL;
     if(compress){
       papszOptions = CSLSetNameValue( papszOptions, "COMPRESS", "DEFLATE" );
@@ -220,18 +226,10 @@ class RasterData : public BaseTable {
 };
 
 
-class Raster {
- private:
-  std::string hexify(int raster_num);
+template<class T>
+void ExportTypedRasterToGeoTIFF();
 
- public:
-  RasterBase        *rb;
-  RasterProjection  *rp;
-  RasterData<float> *rd;
-  Raster(std::string basename, int raster_num);
-
-  ~Raster();
-};
+void ExportRasterToGeoTIFF(std::string basename, int rasternum);
 
 
 

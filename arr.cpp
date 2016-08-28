@@ -7,7 +7,22 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <bitset>
 #include "arr.hpp"
+
+void bitsetToString(const std::vector< uint8_t > &bs){
+  for(const auto &v: bs){
+    std::bitset<8> t(v);
+    std::cerr<<t<<" ";
+  }
+  std::cerr<<std::endl;
+}
+
+std::string hexify(int raster_num){
+  std::stringstream ss;
+  ss << "a" << std::setfill('0') << std::setw(8) << std::hex << raster_num << ".gdbtable";
+  return ss.str();
+}
 
 
 template<class T>
@@ -149,7 +164,7 @@ void Zinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
 }
 
 template<class T>
-std::vector<T> Unpack4BigEndian(std::vector<uint8_t> &packed, const int block_width, const int block_height){
+std::vector<T> Unpack(std::vector<uint8_t> &packed, const int block_width, const int block_height){
   std::vector<T> output(block_width*block_height);
   packed.resize(sizeof(T)*block_width*block_height);
 
@@ -162,6 +177,7 @@ std::vector<T> Unpack4BigEndian(std::vector<uint8_t> &packed, const int block_wi
     #endif
   } else {
     std::cerr<<"Unimplemented type conversion!"<<std::endl;
+    throw std::runtime_error("Unimplemented type conversion!");
   }
 
   memcpy(output.data(), packed.data(), sizeof(T)*block_width*block_height);
@@ -199,6 +215,8 @@ bool BaseTable::skipField(const Field &field, uint8_t &ifield_for_flag_test){
 BaseTable::BaseTable(std::string filename){
   std::string filenamex = getFilenameX(filename);
   gdbtablx.open(filenamex, std::ios_base::in | std::ios_base::binary);
+
+  std::cerr<<"Opening BaseTable as '"<<filename<<"'..."<<std::endl;
 
   if(!gdbtablx.good()){
     std::cerr<<"Could not find '"<<filenamex<<"'!"<<std::endl;
@@ -456,9 +474,9 @@ MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
         auto length = ReadVarUint(gdbtable);
         auto val    = ReadBytesAsString(gdbtable, length);
         auto loc    = val.find("fras_ras_");
-        std::cerr<<val<<" ("<<std::hex<<f<<")"<<std::endl;
+        std::cerr<<val<<" - "<<hexify(f+1)<<std::endl;
         if(loc!=std::string::npos)
-          rasters.emplace_back(val.substr(9), f-1);
+          rasters.emplace_back(val.substr(9), f);
       }
     }
   }
@@ -512,6 +530,7 @@ Field          srid : 0
 set([1, 3, 4, 6])
 */
 RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
+  std::cerr<<"Opening RasterBase as '"<<filename<<"'"<<std::endl;
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
     auto feature_offset = ReadInt32(gdbtablx);
@@ -530,12 +549,29 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
       if(skipField(fields[fi], ifield_for_flag_test))
         continue;
 
+      std::cerr<<"Field name: "<<fields[fi].name<<std::endl;
+
       if(fields[fi].type==1){
-        auto val = ReadInt32(gdbtable);
-        if(fields[fi].name=="block_width")
-          block_width = val;
-        else if(fields[fi].name=="block_height")
-          block_height = val;
+        if(fields[fi].name=="band_types"){
+          //auto val = ReadInt32(gdbtable);
+          //std::cerr<<"band_types = "<<val<<std::endl;
+          band_types = ReadBytes(gdbtable, 4);
+          std::cerr<<"band_types = ";
+          for(auto v: band_types)
+            std::cerr<<std::hex<<(int)v<<" ";
+          //std::cerr<<std::endl;
+          bitsetToString(band_types);
+          data_type  = bandTypeToDataTypeString(band_types);
+          std::cerr<<"Detected band data type = "<<data_type<<std::endl;
+        } else if(fields[fi].name=="block_width"){
+          block_width = ReadInt32(gdbtable);
+          std::cerr<<"block_width = "<<block_width<<std::endl;
+        } else if(fields[fi].name=="block_height"){
+          block_height = ReadInt32(gdbtable);
+          std::cerr<<"block_height = "<<block_height<<std::endl;
+        } else {
+          AdvanceBytes(gdbtable, 4);
+        }
 
       } else if(fields[fi].type == 4 || fields[fi].type == 12){
         auto length = ReadVarUint(gdbtable);
@@ -546,6 +582,68 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
     }
   }
 }
+
+/*
+1_bit           0 4 8  0 00000000 00000100 00001000 00000000 
+4_bit           0 4 20 0 00000000 00000100 00100000 00000000 
+8_bit_signed    0 4 41 0 00000000 00000100 01000001 00000000 
+8_bit_unsigned  0 4 40 0 00000000 00000100 01000000 00000000
+16_bit_signed   0 4 81 0 00000000 00000100 10000001 00000000 
+16_bit_unsigned 0 4 80 0 00000000 00000100 10000000 00000000 
+32_bit_signed   0 4 1  1 00000000 00000100 00000001 00000001 
+32_bit_float    0 4 2  1 00000000 00000100 00000010 00000001 
+32_bit_unsigned 0 4 0  1 00000000 00000100 00000000 00000001 
+64_bit          0 4 0  2 00000000 00000100 00000000 00000010 
+*/
+std::string RasterBase::bandTypeToDataTypeString(std::vector<uint8_t> &band_types) const {
+  if(band_types[2]==0x08 && band_types[3]==0x00) //00000000 00000100 00001000 00000000
+    return "1bit";
+  if(band_types[2]==0x20 && band_types[3]==0x00) //00000000 00000100 00100000 00000000
+    return "4bit";
+  if(band_types[2]==0x41 && band_types[3]==0x00) //00000000 00000100 01000001 00000000
+    return "int8_t";
+  if(band_types[2]==0x40 && band_types[3]==0x00) //00000000 00000100 01000000 0000000
+    return "uint8_t";
+  if(band_types[2]==0x81 && band_types[3]==0x00) //00000000 00000100 10000001 00000000
+    return "int16_t";
+  if(band_types[2]==0x80 && band_types[3]==0x00) //00000000 00000100 10000000 00000000
+    return "uint16_t";
+  if(band_types[2]==0x01 && band_types[3]==0x01) //00000000 00000100 00000001 00000001
+    return "int32_t";
+  if(band_types[2]==0x02 && band_types[3]==0x01) //00000000 00000100 00000010 00000001
+    return "float32";
+  if(band_types[2]==0x00 && band_types[3]==0x01) //00000000 00000100 00000000 00000001
+    return "uint32_t";
+  if(band_types[2]==0x00 && band_types[3]==0x02) //00000000 00000100 00000000 00000010
+    return "float64";
+  else {
+    std::cerr<<"Unrecognised band data type!"<<std::endl;
+    throw std::runtime_error("Unrecognised band data type!");
+  }
+  return "This line should never be reached :-(";
+}
+
+
+/*
+ 1 lz77 (  d)          ./1:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
+10 rle ( 3a)           ./10:band_types = 0 0 40 0 00000000 00000000 01000000 00000000 
+11 ccitt_group4 ( 3f)  ./11:band_types = 0 4 40 0 00000000 00000100 01000000 00000000 
+12 ccitt_1d ( 44)      ./12:band_types = 0 0 40 0 00000000 00000000 01000000 00000000 
+ 2 packbits ( 12)      ./2:band_types  = 0 4 40 0 00000000 00000100 01000000 00000000 
+ 3 packbits2 ( 17)     ./3:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
+ 4 jpeg75 ( 1c)        ./4:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
+ 5 jpeg23 ( 21)        ./5:band_types  = 0 8 40 0 00000000 00001000 01000000 00000000 
+ 6 lzw ( 26)           ./6:band_types  = 0 8 40 0 00000000 00001000 01000000 00000000 
+ 7 jpeg2000 ( 2b)      ./7:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
+ 8 jpeg_Ycbcr ( 30)    ./8:band_types  = 0 c 40 0 00000000 00001100 01000000 00000000 
+ 9 ccitt_group3 ( 35)  ./9:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000
+*/
+// std::string RasterBase::bandTypeToCompressionTypeString(std::vector<uint8_t> &band_types) const {
+
+//   return "This line should never be reached :-(";
+// }
+
+
 
 /* Plus 1
 #######################
@@ -675,13 +773,15 @@ Type: 3
 Field FOOTPRINT_Area : 35602632.000014
 set([9, 3, 6, 7])
 */
-RasterProjection::RasterProjection(std::string filename) : BaseTable(filename){}
+RasterProjection::RasterProjection(std::string filename) : BaseTable(filename){
+  std::cerr<<"Opening RasterProjection as '"<<filename<<"'"<<std::endl;
+}
 
 
 template<class T>
-RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(filename){
+RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTable(filename){
   //TODO: Initialize with NoData value
-  resize(10000,10000);
+  resize(20000,20000);
 
   std::cerr<<"Opening Raster Data as "<<filename<<std::endl;
 
@@ -691,7 +791,7 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
     auto feature_offset = ReadInt32(gdbtablx);
 
-    std::cerr<<"\n\n\nf: "<<f<<std::endl;
+    //std::cerr<<"\n\n\nf: "<<f<<std::endl;
 
     if(feature_offset==0)
       continue;
@@ -706,7 +806,7 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
     int col_nbr    = -1;
     int rrd_factor = -1;
 
-    std::cerr<<"Fields.size = "<<fields.size()<<std::endl;
+    //std::cerr<<"Fields.size = "<<fields.size()<<std::endl;
 
     uint8_t ifield_for_flag_test = 0;
     for(unsigned int fi=0;fi<fields.size();fi++){
@@ -715,7 +815,7 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
 
       if(fields[fi].type==1){
         auto val = ReadInt32(gdbtable);
-        std::cout<<fields[fi].name<<" = "<<val<<std::endl;
+        //std::cout<<fields[fi].name<<" = "<<val<<std::endl;
         if(fields[fi].name=="col_nbr")
           col_nbr = val;
         else if(fields[fi].name=="row_nbr")
@@ -725,16 +825,8 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
       } else if(fields[fi].type == 4 || fields[fi].type == 12){
         auto length = ReadVarUint(gdbtable);
         auto val    = ReadBytes(gdbtable, length);
-        std::cout<<fields[fi].name<<" = ";
-        for(auto &v: val)
-          std::cout<<v<<" ";
-        std::cout<<std::endl;
       } else if(fields[fi].type==8){ //Appears to be where raster data is stored
-        std::cerr<<"HERE!"<<std::endl;
-
         auto length = ReadVarUint(gdbtable);
-
-        std::cerr<<"Length = "<<length<<std::endl;
 
         //Skip that which is not a base layer
         if(rrd_factor!=0){
@@ -744,39 +836,23 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
 
         auto val = ReadBytes(gdbtable, length);
 
-        if(val[0]!=120 || val[1]!=156){ //Magic Bytes indicating zlib
-          std::cerr<<"Unrecognised data compression format. Only zlib is available!"<<std::endl;
-          std::cerr<<"Initial bytes: ";
-          for(uint8_t i=0;i<10;i++)
-            std::cerr<<(int)val[i]<<" ";
-          std::cerr<<std::endl;
-          throw std::runtime_error("Unrecognised data compression format. Only zlib is available!");
+        std::cerr<<"Initial bytes: ";
+        for(uint8_t i=0;i<10;i++)
+          std::cerr<<(int)val[i]<<" ";
+        std::cerr<<std::endl;
+
+        std::vector<T> unpacked;
+
+        if(val[0]==120 && val[1]==156){
+          std::cerr<<"Strong evidence for zlib compression. Running with it."<<std::endl;
+          std::vector<uint8_t> decompressed(120000);
+          Zinflate(val, decompressed);
+          decompressed.resize(sizeof(T)*rb.block_width*rb.block_height); //Drop trailer
+          unpacked = Unpack<T>(decompressed, rb.block_width, rb.block_height);
+        } else {
+          std::cerr<<"Assuming uncompressed data."<<std::endl;
+          unpacked = Unpack<T>(val, rb.block_width, rb.block_height);
         }
-
-        //Decompress data (TODO: Look for other compression formats)
-        std::vector<uint8_t> decompressed(120000);
-
-        Zinflate(val, decompressed);
-
-        std::cerr<<"decompressed_size = "<<decompressed.size()<<std::endl;
-
-        std::cerr<<sizeof(float)<<" "<<r.rb->block_width<<" "<<r.rb->block_height<<std::endl;
-
-        //Drop trailer
-        //TODO: Don't assume 128x128 block size with 4 byte data
-        decompressed.resize(sizeof(float)*r.rb->block_width * r.rb->block_height);
-
-        //std::cout<<"\n\n";
-
-        //TODO: Generalize for various data formats
-        //TODO: Are double and short int also big endian?
-
-        // std::cout<<"Deompcressed: ";
-        // for(unsigned int i=0;i<decompressed.size();i++)
-        //   std::cout<<(int)decompressed[i]<<" ";
-        // std::cout<<"\n";
-
-        auto unpacked = Unpack4BigEndian<float>(decompressed, r.rb->block_width, r.rb->block_height);
 
         // std::cout<<"Unpacked: ";
         // for(unsigned int i=0;i<unpacked.size();i++)
@@ -784,9 +860,9 @@ RasterData<T>::RasterData(std::string filename, const Raster &r) : BaseTable(fil
         // std::cout<<"\n";
 
         //Save data to the numpy array
-        for(int y=0;y<r.rb->block_height;y++)
-        for(int x=0;x<r.rb->block_width;x++)
-          operator()( col_nbr*(r.rb->block_width)+x, row_nbr*(r.rb->block_height)+y ) = unpacked[y*(r.rb->block_width)+x];
+        for(int y=0;y<rb.block_height;y++)
+        for(int x=0;x<rb.block_width;x++)
+          operator()( col_nbr*(rb.block_width)+x, row_nbr*(rb.block_height)+y ) = unpacked[y*(rb.block_width)+x];
       } else {
         std::cerr<<"Unrecognised field type: "<<(int)fields[fi].type<<std::endl;
       }
@@ -820,19 +896,39 @@ void RasterData<T>::setAll(T val){
 
 
 
-std::string Raster::hexify(int raster_num){
-  std::stringstream ss;
-  ss << "a" << std::setfill('0') << std::setw(8) << std::hex << raster_num << ".gdbtable";
-  return ss.str();
+
+template<class T>
+void ExportTypedRasterToGeoTIFF(std::string basename, int raster_num){
+  RasterBase       rb(basename+hexify(raster_num+4)); //Get the fras_bnd file
+  RasterProjection rp(basename+hexify(raster_num+1));
+  RasterData<T>    rd(basename+hexify(raster_num+3), rb);
+
+  rd.save("/z/out.tif","",true);
 }
 
-Raster::Raster(std::string basename, int raster_num){
-  rb = new RasterBase       (basename+hexify(raster_num+0));
-  rp = new RasterProjection (basename+hexify(raster_num+1));
-  rd = new RasterData<float>(basename+hexify(raster_num+4), *this);
-}
+void ExportRasterToGeoTIFF(std::string basename, int raster_num){
+  RasterBase rb(basename+hexify(raster_num+4)); //Get the fras_bnd file
 
-Raster::~Raster(){
-  delete rb;
-  delete rp;
+  if     (rb.data_type=="float32")
+    ExportTypedRasterToGeoTIFF<float>(basename, raster_num);
+  else if(rb.data_type=="uint8_t")
+    ExportTypedRasterToGeoTIFF<uint8_t>(basename, raster_num);
+  else if(rb.data_type=="64bit")
+    ExportTypedRasterToGeoTIFF<int64_t>(basename, raster_num); //TODO: Is this a double, really?
+  else if(rb.data_type=="int16_t")
+    ExportTypedRasterToGeoTIFF<int16_t>(basename, raster_num);
+  else if(rb.data_type=="int32_t")
+    ExportTypedRasterToGeoTIFF<int32_t>(basename, raster_num);
+  else if(rb.data_type=="int8_t")
+    ExportTypedRasterToGeoTIFF<int8_t>(basename, raster_num);
+  else if(rb.data_type=="uint16_t")
+    ExportTypedRasterToGeoTIFF<uint16_t>(basename, raster_num);
+  else if(rb.data_type=="uint32_t")
+    ExportTypedRasterToGeoTIFF<uint32_t>(basename, raster_num);
+  else if(rb.data_type=="4bit")
+    ExportTypedRasterToGeoTIFF<uint8_t>(basename, raster_num);
+  else if(rb.data_type=="1bit")
+    ExportTypedRasterToGeoTIFF<uint8_t>(basename, raster_num);
+  else
+    std::cerr<<"Unrecognised raster data type: "<<rb.data_type<<"!"<<std::endl;
 }

@@ -29,9 +29,8 @@ int main(int argc, char **argv){
       std::cerr<<"Invalid raster number! Must be 0-"<<(mt.rasters.size()-1)<<"."<<std::endl;
       return -1;
     }
-    Raster raster(basename, mt.rasters.at(raster_num).second);
 
-    raster.rd->save("/z/bob.tif","",false);
+    ExportRasterToGeoTIFF(basename, mt.rasters.at(raster_num).second);
   }
 
   return 0;
