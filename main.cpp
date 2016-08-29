@@ -3,8 +3,8 @@
 #include "arr.hpp"
 
 int main(int argc, char **argv){
-  if(argc!=2 && argc!=3){
-    std::cerr<<"Syntax: "<<argv[0]<<" <File Geodatabase> [Raster]"<<std::endl;
+  if(argc!=2 && argc!=4){
+    std::cerr<<"Syntax: "<<argv[0]<<" <File Geodatabase> [Raster] <Output Name>"<<std::endl;
     return -1;
   }
 
@@ -19,7 +19,7 @@ int main(int argc, char **argv){
     if(mt.rasters.size()==0){
       std::cout<<"\tNo rasters found!"<<std::endl;
     }
-  } else if(argc==3){
+  } else if(argc==4){
     unsigned int raster_num = std::stoi(argv[2]);
     if(mt.rasters.size()==0){
       std::cerr<<"No rasters found!"<<std::endl;
@@ -30,7 +30,7 @@ int main(int argc, char **argv){
       return -1;
     }
 
-    ExportRasterToGeoTIFF(basename, mt.rasters.at(raster_num).second);
+    ExportRasterToGeoTIFF(basename, mt.rasters.at(raster_num).second, std::string(argv[3]));
   }
 
   return 0;

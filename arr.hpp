@@ -95,10 +95,19 @@ class RasterBase : public BaseTable {
  private:
   std::string bandTypeToDataTypeString(std::vector< uint8_t > &band_types) const;
  public:
-  int32_t         block_width;
-  int32_t         block_height;
+  int32_t     block_width;
+  int32_t     block_height;
+  int32_t     band_width;
+  int32_t     band_height;
+  double      eminx;
+  double      eminy;
+  double      emaxx;
+  double      emaxy;   
+  double      block_origin_x;
+  double      block_origin_y;
+  std::string data_type;
   std::vector< uint8_t > band_types;
-  std::string     data_type;
+  std::array<double,6> geotransform;
 
   RasterBase(std::string filename);
 };
@@ -115,14 +124,22 @@ class RasterData : public BaseTable {
  public:
   std::vector<T> geodata;
 
+  int minpx = 0;
+  int minpy = 0;
+  int maxpx = 0;
+  int maxpy = 0;
+
   RasterData(std::string filename, const RasterBase &rb);
 
+  void getDimensionsFromData(std::string filename, const RasterBase &rb);
+
   T   no_data;
-  std::vector<double> geotransform;
+  std::array<double,6> geotransform;
   std::string projection;
   int width;
   int height;
-  void resize(int width, int height);
+  void resize(int width, int height, T no_data_val);
+  bool in_raster(int x, int y) const;
   T& operator()(int x, int y);
   T  operator()(int x, int y) const;
   void setAll(T val);
@@ -226,11 +243,6 @@ class RasterData : public BaseTable {
 };
 
 
-template<class T>
-void ExportTypedRasterToGeoTIFF();
-
-void ExportRasterToGeoTIFF(std::string basename, int rasternum);
-
-
+void ExportRasterToGeoTIFF(std::string basename, int raster_num, std::string outputname);
 
 #endif
