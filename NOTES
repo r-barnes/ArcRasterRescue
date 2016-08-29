@@ -1,0 +1,2 @@
+JPEG compression only works with 8-bit data.
+JPEG2000 compression only works with 8- or 16-bit data.
