@@ -933,13 +933,16 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
 
         auto val = ReadBytes(gdbtable, length);
 
+        if(length==0)
+          continue;
+
         #ifdef EXPLORE
+          std::cerr<<"Length = "<<val.size()<<std::endl;
+
           std::cerr<<"Compressed: ";
           for(uint8_t i=0;i<10;i++)
             std::cerr<<(int)val[i]<<" ";
           std::cerr<<std::endl;
-  
-          std::cerr<<"Length = "<<val.size()<<std::endl;
         #endif
 
         std::vector<T> unpacked;
