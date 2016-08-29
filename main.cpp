@@ -31,7 +31,7 @@ int main(int argc, char **argv){
     for(unsigned int r=0;r<mt.rasters.size();r++){
       std::cout<<std::setw(2)<<r<<" "<<mt.rasters[r].first;
       #ifdef EXPLORE
-        std::cout<<" ("<<std::hex<<std::setw(3)<<mt.rasters[r].second<<std::dec<<")\n"; //Latter part displays file identifier
+        std::cout<<" ("<<std::hex<<std::setw(3)<<mt.rasters[r].second<<std::dec<<")"; //Latter part displays file identifier
       #endif
       std::cout<<"\n";
     }
