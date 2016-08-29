@@ -994,7 +994,11 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
           unpacked = Unpack<T>(val, rb.block_width, rb.block_height);
         } else {
           std::cerr<<"Unimplemented compression type!"<<std::endl;
-          throw std::runtime_error("Unimplemented compression type!");
+          #ifdef EXPLORE
+            continue;
+          #else
+            throw std::runtime_error("Unimplemented compression type!");
+          #endif
         }
 
         #ifdef EXPLORE
