@@ -1,2 +1,31 @@
 JPEG compression only works with 8-bit data.
 JPEG2000 compression only works with 8- or 16-bit data.
+
+band_types with compression
+===========================
+
+uncompressed, float
+band_types = 0 0 2  1 00000000 00000000 00000010 00000001 
+
+LZ77, float32
+band_types = 0 4 2  1 00000000 00000100 00000010 00000001 
+
+JPEG, 75% quality, uint8_t
+band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+
+JPEG, 23% quality, uint8_t
+band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+
+JPEG2000 75% quality, int16_t
+band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+
+JPEG2000 23% quality, int16_t
+band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+
+
+LibJPEG examples:
+* https://github.com/LuaDist/libjpeg/blob/master/example.c
+
+* http://www.andrewewhite.net/wordpress/2008/09/02/very-simple-jpeg-writer-in-c-c/
+
+* http://www.aaronmr.com/en/2010/03/test/
