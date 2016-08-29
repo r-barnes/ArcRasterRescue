@@ -212,8 +212,10 @@ std::vector<T> Unpack(std::vector<uint8_t> &packed, const int block_width, const
         std::swap(packed[i+1],packed[i+2]);
       }
     #endif
+  } else if(std::is_same<T, uint8_t>::value || std::is_same<T, int8_t>::value){
+    //No special unpacking needs to be done for these
   } else {
-    std::cerr<<"Unimplemented type conversion!"<<std::endl;
+    std::cerr<<"Unimplemented type conversion for '"<<typeid(T).name()<<"'! (Use c++filt -t to decode.)"<<std::endl;
     throw std::runtime_error("Unimplemented type conversion!");
   }
 
