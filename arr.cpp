@@ -613,7 +613,6 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
             std::cerr<<"band_types = ";
             for(auto v: band_types)
               std::cerr<<std::hex<<(int)v<<" "<<std::dec;
-            std::cerr<<std::endl;
             bitsetToString(band_types);
 
             std::cerr<<"Detected band data type = "<<data_type<<std::endl;
@@ -693,32 +692,58 @@ std::string RasterBase::bandTypeToDataTypeString(std::vector<uint8_t> &band_type
     return "uint32_t";
   if(band_types[2]==0x00 && band_types[3]==0x02) //00000000 00000100 00000000 00000010
     return "64bit";
+
+  std::cerr<<"Unrecognised band data type!"<<std::endl;
+  throw std::runtime_error("Unrecognised band data type!");
+}
+
+
+/*
+uncompressed, float
+band_types = 0 0 2  1 00000000 00000000 00000010 00000001 
+
+LZ77, float32
+band_types = 0 4 2  1 00000000 00000100 00000010 00000001 
+
+JPEG, 75% quality, uint8_t
+band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+
+JPEG, 23% quality, uint8_t
+band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+
+JPEG2000 75% quality, int16_t
+band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+
+JPEG2000 23% quality, int16_t
+band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+*/
+std::string RasterBase::bandTypeToCompressionTypeString(std::vector<uint8_t> &band_types) const {
+  if(band_types[2]==0x08) //00000000 00000100 00001000 00000000
+    return "1bit";
+  if(band_types[2]==0x20) //00000000 00000100 00100000 00000000
+    return "4bit";
+  if(band_types[2]==0x41) //00000000 00000100 01000001 00000000
+    return "int8_t";
+  if(band_types[2]==0x40) //00000000 00000100 01000000 0000000
+    return "uint8_t";
+  if(band_types[2]==0x81) //00000000 00000100 10000001 00000000
+    return "int16_t";
+  if(band_types[2]==0x80) //00000000 00000100 10000000 00000000
+    return "uint16_t";
+  if(band_types[2]==0x01) //00000000 00000100 00000001 00000001
+    return "int32_t";
+  if(band_types[2]==0x02) //00000000 00000100 00000010 00000001
+    return "float32";
+  if(band_types[2]==0x00) //00000000 00000100 00000000 00000001
+    return "uint32_t";
+  if(band_types[2]==0x00) //00000000 00000100 00000000 00000010
+    return "64bit";
   else {
     std::cerr<<"Unrecognised band data type!"<<std::endl;
     throw std::runtime_error("Unrecognised band data type!");
   }
   return "This line should never be reached :-(";
 }
-
-
-/*
- 1 lz77 (  d)          ./1:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
-10 rle ( 3a)           ./10:band_types = 0 0 40 0 00000000 00000000 01000000 00000000 
-11 ccitt_group4 ( 3f)  ./11:band_types = 0 4 40 0 00000000 00000100 01000000 00000000 
-12 ccitt_1d ( 44)      ./12:band_types = 0 0 40 0 00000000 00000000 01000000 00000000 
- 2 packbits ( 12)      ./2:band_types  = 0 4 40 0 00000000 00000100 01000000 00000000 
- 3 packbits2 ( 17)     ./3:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
- 4 jpeg75 ( 1c)        ./4:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
- 5 jpeg23 ( 21)        ./5:band_types  = 0 8 40 0 00000000 00001000 01000000 00000000 
- 6 lzw ( 26)           ./6:band_types  = 0 8 40 0 00000000 00001000 01000000 00000000 
- 7 jpeg2000 ( 2b)      ./7:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000 
- 8 jpeg_Ycbcr ( 30)    ./8:band_types  = 0 c 40 0 00000000 00001100 01000000 00000000 
- 9 ccitt_group3 ( 35)  ./9:band_types  = 0 0 40 0 00000000 00000000 01000000 00000000
-*/
-// std::string RasterBase::bandTypeToCompressionTypeString(std::vector<uint8_t> &band_types) const {
-
-//   return "This line should never be reached :-(";
-// }
 
 
 

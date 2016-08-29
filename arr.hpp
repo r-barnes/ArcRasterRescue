@@ -115,6 +115,7 @@ class MasterTable : public BaseTable {
 class RasterBase : public BaseTable {
  private:
   std::string bandTypeToDataTypeString(std::vector< uint8_t > &band_types) const;
+  std::string bandTypeToCompressionTypeString(std::vector<uint8_t> &band_types) const;
  public:
   int32_t     block_width;
   int32_t     block_height;

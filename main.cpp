@@ -28,8 +28,13 @@ int main(int argc, char **argv){
 
   if(argc==2){
     std::cout<<"Rasters found: \n";
-    for(unsigned int r=0;r<mt.rasters.size();r++)
-      std::cout<<std::setw(2)<<r<<" "<<mt.rasters[r].first<<"\n"; //<<" ("<<std::hex<<std::setw(3)<<mt.rasters[r].second<<std::dec<<")\n"; //Latter part displays file identifier
+    for(unsigned int r=0;r<mt.rasters.size();r++){
+      std::cout<<std::setw(2)<<r<<" "<<mt.rasters[r].first;
+      #ifdef EXPLORE
+        std::cout<<" ("<<std::hex<<std::setw(3)<<mt.rasters[r].second<<std::dec<<")\n"; //Latter part displays file identifier
+      #endif
+      std::cout<<"\n";
+    }
     if(mt.rasters.size()==0){
       std::cout<<"\tNo rasters found!"<<std::endl;
     }
