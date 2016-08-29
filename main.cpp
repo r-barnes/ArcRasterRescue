@@ -7,6 +7,8 @@ int main(int argc, char **argv){
   for(int i=0;i<argc;i++)
     operation+=argv[i]+std::string(" ");
 
+  std::cerr<<program_identifier<<std::endl;
+
   if(argc!=2 && argc!=4){
     std::cerr<<"Syntax A: "<<argv[0]<<" <File Geodatabase>"<<std::endl;
     std::cerr<<"Syntax B: "<<argv[0]<<" <File Geodatabase> <Raster> <Output Name>"<<std::endl;

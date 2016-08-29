@@ -10,6 +10,27 @@
 #include <typeinfo>
 #include <chrono>
 
+#ifndef GIT_HASH
+  #pragma message "Compiling without a git hash!"
+  const std::string git_hash = "NO HASH SPECIFIED!";
+#else
+  const std::string git_hash = std::string(GIT_HASH).substr(0,16);
+#endif
+
+#ifndef COMPILE_TIME
+  #pragma message "Compiling without UTC compile time falling back to local!"
+  const std::string compilation_datetime = __DATE__ " " __TIME__;
+#else
+  const std::string compilation_datetime = COMPILE_TIME;
+#endif
+
+const std::string program_url = "github.com/r-barnes/ArcRasterRescue";
+
+///Richdem vX.X.X
+const std::string program_name = "Arc Raster Rescue";
+
+///Richdem vX.X.X (hash=GIT HASH, compiled=COMPILATION DATE TIME)
+const std::string program_identifier = program_name + " (url="+program_url+", hash=" + git_hash + ", compiled="+compilation_datetime + ")";
 
 class RasterFields {
  public:
@@ -199,9 +220,9 @@ class RasterData : public BaseTable {
       char time_str[64];
       std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S UTC", std::gmtime(&the_time));
       fout->SetMetadataItem("TIFFTAG_DATETIME",   time_str);
-      fout->SetMetadataItem("TIFFTAG_SOFTWARE",   "Arc Raster Rescue (github.com/r-barnes/ArcRasterRescue)");
+      fout->SetMetadataItem("TIFFTAG_SOFTWARE", program_identifier.c_str());
 
-      auto out_processing_history = std::string(time_str) + " | " + "Arc Raster Rescue (github.com/r-barnes/ArcRasterRescue)" + " | ";
+      auto out_processing_history = std::string(time_str) + " | " + program_identifier + " | ";
       if(!metadata.empty())
         out_processing_history += metadata;
       else
