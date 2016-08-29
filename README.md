@@ -4,8 +4,6 @@ ArcRasterRescue
 The enclosed program extracts (rescues!) raster data from an ArcGIS File
 Geodatabase into a GeoTIFF file.
 
-To use the software, run `make` to build `arc_raster.exe`.
-
 List the numbers and names of rasters in the geodatabase using
 
     ./arc_raster.exe path/to/geodatabase.gdb/
@@ -26,6 +24,16 @@ Requirements
 * [C++11](https://en.wikipedia.org/wiki/C%2B%2B11)
 * [zlib](http://www.zlib.net/)
 * [GDAL](http://www.gdal.org/)
+
+Compilation
+===========
+
+To compile run:
+
+    make
+
+Edit the makefile to include the `-DEXPLORE` flag to print additional
+information useful for development to stderr as the program runs.
 
 TODO
 ====
