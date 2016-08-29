@@ -16,6 +16,8 @@ int main(int argc, char **argv){
     std::cerr<<"Syntax A will list all of the rasters in the data set along with selection numbers for use with Syntax B.\n";
     std::cerr<<"Syntax B, given an FGDB and raster selection number, will output the raster to the indicated output file.\n";
     std::cerr<<"Syntax B also accepts raster names, as listed by Syntax A, as inputs for <Raster>\n";
+    std::cerr<<"\nNOTE: The geodatabase path must end with a slash!\n";
+    std::cerr<<"EXAMPLE: ./arc_raster.exe path/to/geodatabase.gdb/ dem03 /z/out.tif\n";
     return -1;
   }
 

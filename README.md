@@ -18,6 +18,8 @@ You can also extract a GeoTIFF using
 
     ./arc_raster.exe path/to/geodatabase.gdb/ <RASTER NAME> <OUTPUT FILE>
 
+The geodatabase path must end with a slash!
+
 Requirements
 ============
 
