@@ -253,7 +253,9 @@ BaseTable::BaseTable(std::string filename){
   std::string filenamex = getFilenameX(filename);
   gdbtablx.open(filenamex, std::ios_base::in | std::ios_base::binary);
 
-  std::cerr<<"Opening BaseTable as '"<<filename<<"'..."<<std::endl;
+  #ifdef EXPLORE
+    std::cerr<<"Opening BaseTable as '"<<filename<<"'..."<<std::endl;
+  #endif
 
   if(!gdbtablx.good()){
     std::cerr<<"Could not find '"<<filenamex<<"'!"<<std::endl;
@@ -402,7 +404,9 @@ BaseTable::BaseTable(std::string filename){
       auto wkt_len     = GetCount(gdbtable);
       field.raster.wkt = GetString(gdbtable,wkt_len/2);
 
-      std::cerr<<"WKT: "<<field.raster.wkt<<std::endl;
+      #ifdef EXPLORE
+        std::cerr<<"WKT: "<<field.raster.wkt<<std::endl;
+      #endif
 
       //f.read(82) //TODO: Was like this in source.
 
@@ -487,6 +491,9 @@ BaseTable::BaseTable(std::string filename){
 
 
 MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
+  #ifdef EXPLORE
+    std::cerr<<"gdbtables found:\n";
+  #endif
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
     auto feature_offset = ReadInt32(gdbtablx);
@@ -513,7 +520,9 @@ MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
         auto length = ReadVarUint(gdbtable);
         auto val    = ReadBytesAsString(gdbtable, length);
         auto loc    = val.find("fras_ras_");
-        std::cerr<<val<<" - "<<hexify(f+1)<<std::endl;
+        #ifdef EXPLORE
+          std::cerr<<"\t"<<val<<" - "<<hexify(f+1)<<"\n";
+        #endif
         if(loc!=std::string::npos)
           rasters.emplace_back(val.substr(9), f);
       }
@@ -569,7 +578,9 @@ Field          srid : 0
 set([1, 3, 4, 6])
 */
 RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
-  std::cerr<<"Opening RasterBase as '"<<filename<<"'"<<std::endl;
+  #ifdef EXPLORE
+    std::cerr<<"Opening RasterBase as '"<<filename<<"'"<<std::endl;
+  #endif
 
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
@@ -596,23 +607,24 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
           //auto val = ReadInt32(gdbtable);
           //std::cerr<<"band_types = "<<val<<std::endl;
           band_types = ReadBytes(gdbtable, 4);
-          std::cerr<<"band_types = ";
-          for(auto v: band_types)
-            std::cerr<<std::hex<<(int)v<<" ";
-          //std::cerr<<std::endl;
-          bitsetToString(band_types);
+          #ifdef EXPLORE
+            std::cerr<<"band_types = ";
+            for(auto v: band_types)
+              std::cerr<<std::hex<<(int)v<<" "<<std::dec;
+            std::cerr<<std::endl;
+            bitsetToString(band_types);
+
+            std::cerr<<"Detected band data type = "<<data_type<<std::endl;
+          #endif
           data_type  = bandTypeToDataTypeString(band_types);
-          std::cerr<<"Detected band data type = "<<data_type<<std::endl;
         } else if(fields[fi].name=="block_width")
           block_width = ReadInt32(gdbtable);
         else if(fields[fi].name=="block_height")
           block_height = ReadInt32(gdbtable);
         else if(fields[fi].name=="band_width"){
           band_width = ReadInt32(gdbtable);
-          std::cerr<<"band_width = "<<band_width<<std::endl;
         } else if(fields[fi].name=="band_height"){
           band_height = ReadInt32(gdbtable);
-          std::cerr<<"band_height = "<<band_height<<std::endl;
         } else
           AdvanceBytes(gdbtable, 4);
 
@@ -837,7 +849,9 @@ Field FOOTPRINT_Area : 35602632.000014
 set([9, 3, 6, 7])
 */
 RasterProjection::RasterProjection(std::string filename) : BaseTable(filename){
-  std::cerr<<"Opening RasterProjection as '"<<filename<<"'"<<std::endl;
+  #ifdef EXPLORE
+    std::cerr<<"Opening RasterProjection as '"<<filename<<"'"<<std::endl;
+  #endif
 }
 
 
@@ -866,7 +880,9 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
   const int xoffset = -minpx;
   const int yoffset = -minpy;
 
-  std::cerr<<"Opening Raster Data as "<<filename<<std::endl;
+  #ifdef EXPLORE
+    std::cerr<<"Opening Raster Data as "<<filename<<std::endl;
+  #endif
 
   int skipped_points = 0;
 
@@ -917,12 +933,14 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
 
         auto val = ReadBytes(gdbtable, length);
 
-        std::cerr<<"Compressed: ";
-        for(uint8_t i=0;i<10;i++)
-          std::cerr<<(int)val[i]<<" ";
-        std::cerr<<std::endl;
-
-        std::cerr<<"Length = "<<val.size()<<std::endl;
+        #ifdef EXPLORE
+          std::cerr<<"Compressed: ";
+          for(uint8_t i=0;i<10;i++)
+            std::cerr<<(int)val[i]<<" ";
+          std::cerr<<std::endl;
+  
+          std::cerr<<"Length = "<<val.size()<<std::endl;
+        #endif
 
         std::vector<T> unpacked;
 
@@ -943,20 +961,24 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
           decompressed.resize(sizeof(T)*rb.block_width*rb.block_height); //Drop trailer
           unpacked = Unpack<T>(decompressed, rb.block_width, rb.block_height);
 
-          std::cout<<"Decompressed: ";
-          for(unsigned int i=0;i<10;i++)
-            std::cout<<std::hex<<(int)decompressed[i]<<std::dec<<" ";
-          std::cout<<"\n";
+          #ifdef EXPLORE
+            std::cout<<"Decompressed: ";
+            for(unsigned int i=0;i<10;i++)
+              std::cout<<std::hex<<(int)decompressed[i]<<std::dec<<" ";
+            std::cout<<"\n";
+          #endif
 
         } else {
           //std::cerr<<"Assuming uncompressed data."<<std::endl;
           unpacked = Unpack<T>(val, rb.block_width, rb.block_height);
         }
 
-        std::cout<<"Unpacked: ";
-        for(unsigned int i=0;i<10;i++)
-          std::cout<<unpacked[i]<<" ";
-        std::cout<<"\n";
+        #ifdef EXPLORE
+          std::cout<<"Unpacked: ";
+          for(unsigned int i=0;i<10;i++)
+            std::cout<<unpacked[i]<<" ";
+          std::cout<<"\n";
+        #endif
 
         //Save data to the numpy array
         for(int y=0;y<rb.block_height;y++)
@@ -976,7 +998,9 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
     }
   }
 
-  std::cerr<<"Skipped points: "<<std::dec<<skipped_points<<std::endl;
+  #ifdef EXPLORE
+    std::cerr<<"Skipped points: "<<std::dec<<skipped_points<<std::endl;
+  #endif
 
   //TODO: FGDB doesn't seem to store NoData values for the data I tested in any
   //of the gdbtables. I also found it difficult to set NoData values. At least
@@ -1117,7 +1141,9 @@ void ExportTypedRasterToGeoTIFF(std::string operation, std::string basename, int
       rd.projection = f.raster.wkt;
     }
 
-  std::cerr<<"Projection: "<<rd.projection<<std::endl;
+  #ifdef EXPLORE
+    std::cerr<<"Projection: "<<rd.projection<<std::endl;
+  #endif
 
   rd.geotransform = rb.geotransform;
 

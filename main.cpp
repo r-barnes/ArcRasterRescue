@@ -8,7 +8,11 @@ int main(int argc, char **argv){
     operation+=argv[i]+std::string(" ");
 
   if(argc!=2 && argc!=4){
-    std::cerr<<"Syntax: "<<argv[0]<<" <File Geodatabase> [Raster] <Output Name>"<<std::endl;
+    std::cerr<<"Syntax A: "<<argv[0]<<" <File Geodatabase>"<<std::endl;
+    std::cerr<<"Syntax B: "<<argv[0]<<" <File Geodatabase> <Raster> <Output Name>"<<std::endl;
+    std::cerr<<"\n";
+    std::cerr<<"Syntax A will list all of the rasters in the data set along with selection numbers for use with Syntax B.\n";
+    std::cerr<<"Syntax B, given an FGDB and raster selection number, will output the raster to the indicated output file.\n";
     return -1;
   }
 
@@ -19,7 +23,7 @@ int main(int argc, char **argv){
   if(argc==2){
     std::cout<<"Rasters found: \n";
     for(unsigned int r=0;r<mt.rasters.size();r++)
-      std::cout<<std::setw(2)<<r<<" "<<mt.rasters[r].first<<" ("<<std::hex<<std::setw(3)<<mt.rasters[r].second<<std::dec<<")\n";
+      std::cout<<std::setw(2)<<r<<" "<<mt.rasters[r].first<<"\n"; //<<" ("<<std::hex<<std::setw(3)<<mt.rasters[r].second<<std::dec<<")\n"; //Latter part displays file identifier
     if(mt.rasters.size()==0){
       std::cout<<"\tNo rasters found!"<<std::endl;
     }
