@@ -46,6 +46,8 @@ TODO
 
 *Improve geotransform calculations.
 
+*Switch some identification strings to ENUM values so things run quicker
+
 Credits
 =======
 
