@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <locale>
 #include "arr.hpp"
 
 int main(int argc, char **argv){
@@ -43,11 +44,17 @@ int main(int argc, char **argv){
     try {
       raster_num = std::stoi(argv[2]);
     } catch (...) {
-      for(unsigned int i=0;i<mt.rasters.size();i++)
-        if(mt.rasters[i].first==argv[2]){
+      for(unsigned int i=0;i<mt.rasters.size();i++){
+        std::locale loc;
+        std::string lower;
+        for(auto &s: mt.rasters[i].first)
+          s = std::tolower(s,loc);
+
+        if(mt.rasters[i].first==argv[2] || lower==argv[2]){
           raster_num = i;
           break;
         }
+      }
     }
     if(raster_num>=mt.rasters.size()){ //Note: Don't need <0 check because raster_num is unsigned
       std::cerr<<"Invalid raster number! Must be 0-"<<(mt.rasters.size()-1)<<"."<<std::endl;
