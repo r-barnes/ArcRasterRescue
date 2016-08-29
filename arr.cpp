@@ -150,13 +150,13 @@ void Zinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
   err = inflateInit2(&strm, (15 + 32)); //15 window bits, and the +32 tells zlib to to detect if using gzip or zlib
   if(err!=Z_OK){
     inflateEnd(&strm);
-    throw std::runtime_error(std::to_string(err));
+    throw std::runtime_error("zlib error: "+std::to_string(err));
   }
 
   err = inflate(&strm, Z_FINISH);
   if (err!=Z_STREAM_END) {
    inflateEnd(&strm);
-   throw std::runtime_error(std::to_string(err));
+   throw std::runtime_error("zlib error: "+std::to_string(err));
   }
 
   ret = strm.total_out;
@@ -172,7 +172,40 @@ std::vector<T> Unpack(std::vector<uint8_t> &packed, const int block_width, const
   if(std::is_same<T,float>::value){
     #if __FLOAT_WORD_ORDER__ == __ORDER_LITTLE_ENDIAN__
       for(unsigned int i=0;i<packed.size();i+=4){
-        std::swap(packed[i],  packed[i+3]);
+        std::swap(packed[i+0],packed[i+3]);
+        std::swap(packed[i+1],packed[i+2]);
+      }
+    #endif
+  } else if(std::is_same<T,double>::value){
+    #if __FLOAT_WORD_ORDER__ == __ORDER_LITTLE_ENDIAN__
+      for(unsigned int i=0;i<packed.size();i+=8){
+        std::swap(packed[i+0],packed[i+7]);
+        std::swap(packed[i+1],packed[i+6]);
+        std::swap(packed[i+2],packed[i+5]);
+        std::swap(packed[i+3],packed[i+4]);
+      }
+    #endif
+  } else if(std::is_same<T,int16_t>::value){
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+      for(unsigned int i=0;i<packed.size();i+=2)
+        std::swap(packed[i+0],packed[i+1]);
+    #endif
+  } else if(std::is_same<T,int32_t>::value){
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+      for(unsigned int i=0;i<packed.size();i+=4){
+        std::swap(packed[i+0],packed[i+3]);
+        std::swap(packed[i+1],packed[i+2]);
+      }
+    #endif
+  } else if(std::is_same<T,uint16_t>::value){
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+      for(unsigned int i=0;i<packed.size();i+=2)
+        std::swap(packed[i+0],packed[i+1]);
+    #endif
+  } else if(std::is_same<T,uint32_t>::value){
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+      for(unsigned int i=0;i<packed.size();i+=4){
+        std::swap(packed[i+0],packed[i+3]);
         std::swap(packed[i+1],packed[i+2]);
       }
     #endif
@@ -642,7 +675,7 @@ std::string RasterBase::bandTypeToDataTypeString(std::vector<uint8_t> &band_type
   if(band_types[2]==0x00 && band_types[3]==0x01) //00000000 00000100 00000000 00000001
     return "uint32_t";
   if(band_types[2]==0x00 && band_types[3]==0x02) //00000000 00000100 00000000 00000010
-    return "float64";
+    return "64bit";
   else {
     std::cerr<<"Unrecognised band data type!"<<std::endl;
     throw std::runtime_error("Unrecognised band data type!");
@@ -881,10 +914,12 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
 
         auto val = ReadBytes(gdbtable, length);
 
-        // std::cerr<<"Initial bytes: ";
-        // for(uint8_t i=0;i<10;i++)
-        //   std::cerr<<(int)val[i]<<" ";
-        // std::cerr<<std::endl;
+        std::cerr<<"Compressed: ";
+        for(uint8_t i=0;i<10;i++)
+          std::cerr<<(int)val[i]<<" ";
+        std::cerr<<std::endl;
+
+        std::cerr<<"Length = "<<val.size()<<std::endl;
 
         std::vector<T> unpacked;
 
@@ -900,25 +935,25 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
         //compression for any non-pathological data.
         if(val[0]==120 && val[1]==156 && val.size()<rb.block_width*rb.block_height*sizeof(T)){ 
           //std::cerr<<"Strong evidence for zlib compression. Running with it."<<std::endl;
-          std::vector<uint8_t> decompressed(120000);
+          std::vector<uint8_t> decompressed(1000000);
           Zinflate(val, decompressed);
           decompressed.resize(sizeof(T)*rb.block_width*rb.block_height); //Drop trailer
           unpacked = Unpack<T>(decompressed, rb.block_width, rb.block_height);
 
-          // std::cout<<"Decompressed: ";
-          // for(unsigned int i=0;i<10;i++)
-          //   std::cout<<(int)decompressed[i]<<" ";
-          // std::cout<<"\n";
+          std::cout<<"Decompressed: ";
+          for(unsigned int i=0;i<10;i++)
+            std::cout<<std::hex<<(int)decompressed[i]<<std::dec<<" ";
+          std::cout<<"\n";
 
         } else {
           //std::cerr<<"Assuming uncompressed data."<<std::endl;
           unpacked = Unpack<T>(val, rb.block_width, rb.block_height);
         }
 
-        // std::cout<<"Unpacked: ";
-        // for(unsigned int i=0;i<10;i++)
-        //   std::cout<<unpacked[i]<<" ";
-        // std::cout<<"\n";
+        std::cout<<"Unpacked: ";
+        for(unsigned int i=0;i<10;i++)
+          std::cout<<unpacked[i]<<" ";
+        std::cout<<"\n";
 
         //Save data to the numpy array
         for(int y=0;y<rb.block_height;y++)
@@ -1089,12 +1124,12 @@ void ExportTypedRasterToGeoTIFF(std::string operation, std::string basename, int
 void ExportRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname){
   RasterBase rb(basename+hexify(raster_num+4)); //Get the fras_bnd file
 
-  if     (rb.data_type=="float32")
+  if     (rb.data_type=="64bit")
+    ExportTypedRasterToGeoTIFF<double>(operation, basename, raster_num, outputname);
+  else if(rb.data_type=="float32")
     ExportTypedRasterToGeoTIFF<float>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="uint8_t")
     ExportTypedRasterToGeoTIFF<uint8_t>(operation, basename, raster_num, outputname);
-  else if(rb.data_type=="64bit")
-    ExportTypedRasterToGeoTIFF<int64_t>(operation, basename, raster_num, outputname); //TODO: Is this a double, really?
   else if(rb.data_type=="int16_t")
     ExportTypedRasterToGeoTIFF<int16_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="int32_t")
