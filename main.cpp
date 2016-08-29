@@ -15,6 +15,7 @@ int main(int argc, char **argv){
     std::cerr<<"\n";
     std::cerr<<"Syntax A will list all of the rasters in the data set along with selection numbers for use with Syntax B.\n";
     std::cerr<<"Syntax B, given an FGDB and raster selection number, will output the raster to the indicated output file.\n";
+    std::cerr<<"Syntax B also accepts raster names, as listed by Syntax A, as inputs for <Raster>\n";
     return -1;
   }
 
@@ -30,10 +31,21 @@ int main(int argc, char **argv){
       std::cout<<"\tNo rasters found!"<<std::endl;
     }
   } else if(argc==4){
-    unsigned int raster_num = std::stoi(argv[2]);
     if(mt.rasters.size()==0){
       std::cerr<<"No rasters found!"<<std::endl;
       return -1;
+    }
+
+    unsigned int raster_num = (unsigned int)-1;
+
+    try {
+      raster_num = std::stoi(argv[2]);
+    } catch (...) {
+      for(unsigned int i=0;i<mt.rasters.size();i++)
+        if(mt.rasters[i].first==argv[2]){
+          raster_num = i;
+          break;
+        }
     }
     if(raster_num>=mt.rasters.size()){ //Note: Don't need <0 check because raster_num is unsigned
       std::cerr<<"Invalid raster number! Must be 0-"<<(mt.rasters.size()-1)<<"."<<std::endl;

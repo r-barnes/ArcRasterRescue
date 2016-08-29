@@ -6,13 +6,17 @@ Geodatabase into a GeoTIFF file.
 
 To use the software, run `make` to build `arc_raster.exe`.
 
-List the rasters in the geodatabase using
+List the numbers and names of rasters in the geodatabase using
 
     ./arc_raster.exe path/to/geodatabase.gdb/
 
 Extract to a GeoTIFF using
 
     ./arc_raster.exe path/to/geodatabase.gdb/ <RASTER NUM> <OUTPUT FILE>
+
+You can also extract a GeoTIFF using
+
+    ./arc_raster.exe path/to/geodatabase.gdb/ <RASTER NAME> <OUTPUT FILE>
 
 Requirements
 ============
