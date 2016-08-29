@@ -3,6 +3,10 @@
 #include "arr.hpp"
 
 int main(int argc, char **argv){
+  std::string operation;
+  for(int i=0;i<argc;i++)
+    operation+=argv[i]+std::string(" ");
+
   if(argc!=2 && argc!=4){
     std::cerr<<"Syntax: "<<argv[0]<<" <File Geodatabase> [Raster] <Output Name>"<<std::endl;
     return -1;
@@ -30,7 +34,7 @@ int main(int argc, char **argv){
       return -1;
     }
 
-    ExportRasterToGeoTIFF(basename, mt.rasters.at(raster_num).second, std::string(argv[3]));
+    ExportRasterToGeoTIFF(operation, basename, mt.rasters.at(raster_num).second, std::string(argv[3]));
   }
 
   return 0;

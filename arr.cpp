@@ -1060,7 +1060,7 @@ void RasterData<T>::setAll(T val){
 
 
 template<class T>
-void ExportTypedRasterToGeoTIFF(std::string basename, int raster_num, std::string outputname){
+void ExportTypedRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname){
   BaseTable        bt(basename+hexify(raster_num));
   RasterBase       rb(basename+hexify(raster_num+4)); //Get the fras_bnd file
   RasterProjection rp(basename+hexify(raster_num+1));
@@ -1083,32 +1083,32 @@ void ExportTypedRasterToGeoTIFF(std::string basename, int raster_num, std::strin
 
   rd.geotransform = rb.geotransform;
 
-  rd.save(outputname.c_str(),"",false);
+  rd.save(outputname.c_str(),operation,false);
 }
 
-void ExportRasterToGeoTIFF(std::string basename, int raster_num, std::string outputname){
+void ExportRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname){
   RasterBase rb(basename+hexify(raster_num+4)); //Get the fras_bnd file
 
   if     (rb.data_type=="float32")
-    ExportTypedRasterToGeoTIFF<float>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<float>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="uint8_t")
-    ExportTypedRasterToGeoTIFF<uint8_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<uint8_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="64bit")
-    ExportTypedRasterToGeoTIFF<int64_t>(basename, raster_num, outputname); //TODO: Is this a double, really?
+    ExportTypedRasterToGeoTIFF<int64_t>(operation, basename, raster_num, outputname); //TODO: Is this a double, really?
   else if(rb.data_type=="int16_t")
-    ExportTypedRasterToGeoTIFF<int16_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<int16_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="int32_t")
-    ExportTypedRasterToGeoTIFF<int32_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<int32_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="int8_t")
-    ExportTypedRasterToGeoTIFF<int8_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<int8_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="uint16_t")
-    ExportTypedRasterToGeoTIFF<uint16_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<uint16_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="uint32_t")
-    ExportTypedRasterToGeoTIFF<uint32_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<uint32_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="4bit")
-    ExportTypedRasterToGeoTIFF<uint8_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<uint8_t>(operation, basename, raster_num, outputname);
   else if(rb.data_type=="1bit")
-    ExportTypedRasterToGeoTIFF<uint8_t>(basename, raster_num, outputname);
+    ExportTypedRasterToGeoTIFF<uint8_t>(operation, basename, raster_num, outputname);
   else
     std::cerr<<"Unrecognised raster data type: "<<rb.data_type<<"!"<<std::endl;
 }

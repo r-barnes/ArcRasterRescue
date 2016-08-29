@@ -199,9 +199,9 @@ class RasterData : public BaseTable {
       char time_str[64];
       std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S UTC", std::gmtime(&the_time));
       fout->SetMetadataItem("TIFFTAG_DATETIME",   time_str);
-      fout->SetMetadataItem("TIFFTAG_SOFTWARE",   "Arc Raster Rescue (Richard Barnes - rbarnes@umn.edu)");
+      fout->SetMetadataItem("TIFFTAG_SOFTWARE",   "Arc Raster Rescue (github.com/r-barnes/ArcRasterRescue)");
 
-      auto out_processing_history = std::string(time_str) + " | " + "Arc Raster Rescue (Richard Barnes - rbarnes@umn.edu)" + " | ";
+      auto out_processing_history = std::string(time_str) + " | " + "Arc Raster Rescue (github.com/r-barnes/ArcRasterRescue)" + " | ";
       if(!metadata.empty())
         out_processing_history += metadata;
       else
@@ -243,6 +243,6 @@ class RasterData : public BaseTable {
 };
 
 
-void ExportRasterToGeoTIFF(std::string basename, int raster_num, std::string outputname);
+void ExportRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname);
 
 #endif
