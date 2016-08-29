@@ -164,6 +164,9 @@ void Zinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
   dst.resize(ret);
 }
 
+
+//TODO: The following assumes that data is always stored in big endian order.
+//This should be confirmed.
 template<class T>
 std::vector<T> Unpack(std::vector<uint8_t> &packed, const int block_width, const int block_height){
   std::vector<T> output(block_width*block_height);
