@@ -617,7 +617,8 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
 
             std::cerr<<"Detected band data type = "<<data_type<<std::endl;
           #endif
-          data_type  = bandTypeToDataTypeString(band_types);
+          data_type        = bandTypeToDataTypeString(band_types);
+          compression_type = bandTypeToCompressionTypeString(band_types);
         } else if(fields[fi].name=="block_width")
           block_width = ReadInt32(gdbtable);
         else if(fields[fi].name=="block_height")
@@ -718,31 +719,17 @@ JPEG2000 23% quality, int16_t
 band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
 */
 std::string RasterBase::bandTypeToCompressionTypeString(std::vector<uint8_t> &band_types) const {
-  if(band_types[2]==0x08) //00000000 00000100 00001000 00000000
-    return "1bit";
-  if(band_types[2]==0x20) //00000000 00000100 00100000 00000000
-    return "4bit";
-  if(band_types[2]==0x41) //00000000 00000100 01000001 00000000
-    return "int8_t";
-  if(band_types[2]==0x40) //00000000 00000100 01000000 0000000
-    return "uint8_t";
-  if(band_types[2]==0x81) //00000000 00000100 10000001 00000000
-    return "int16_t";
-  if(band_types[2]==0x80) //00000000 00000100 10000000 00000000
-    return "uint16_t";
-  if(band_types[2]==0x01) //00000000 00000100 00000001 00000001
-    return "int32_t";
-  if(band_types[2]==0x02) //00000000 00000100 00000010 00000001
-    return "float32";
-  if(band_types[2]==0x00) //00000000 00000100 00000000 00000001
-    return "uint32_t";
-  if(band_types[2]==0x00) //00000000 00000100 00000000 00000010
-    return "64bit";
-  else {
-    std::cerr<<"Unrecognised band data type!"<<std::endl;
-    throw std::runtime_error("Unrecognised band data type!");
-  }
-  return "This line should never be reached :-(";
+  if(band_types[1]==0x00) //band_types = 0 0 2  1 00000000 00000000 00000010 00000001 
+    return "uncompressed";
+  if(band_types[1]==0x04) //band_types = 0 4 2  1 00000000 00000100 00000010 00000001 
+    return "lz77";
+  if(band_types[1]==0x08) //band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+    return "jpeg";
+  if(band_types[1]==0x0C) //band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+    return "jpeg2000";
+
+  std::cerr<<"Unrecognised band compression type!"<<std::endl;
+  throw std::runtime_error("Unrecognised band compression type!");
 }
 
 
@@ -984,7 +971,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
         //field to determine probabilistically if compression is being used. The
         //check should be fairly robust, though, since we expect some degree of
         //compression for any non-pathological data.
-        if(val[0]==120 && val[1]==156 && val.size()<rb.block_width*rb.block_height*sizeof(T)){ 
+        if(rb.compression_type=="lz77"){ 
           #ifdef EXPLORE
             std::cerr<<"Decompressing with zlib"<<std::endl;
           #endif
@@ -1000,11 +987,14 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
             std::cout<<"\n";
           #endif
 
-        } else {
+        } else if(rb.compression_type=="uncompressed") {
           #ifdef EXPLORE
             std::cerr<<"Assuming uncompressed data"<<std::endl;
           #endif
           unpacked = Unpack<T>(val, rb.block_width, rb.block_height);
+        } else {
+          std::cerr<<"Unimplemented compression type!"<<std::endl;
+          throw std::runtime_error("Unimplemented compression type!");
         }
 
         #ifdef EXPLORE

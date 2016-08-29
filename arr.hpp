@@ -128,6 +128,7 @@ class RasterBase : public BaseTable {
   double      block_origin_x;
   double      block_origin_y;
   std::string data_type;
+  std::string compression_type;
   std::vector< uint8_t > band_types;
   std::array<double,6> geotransform;
 
