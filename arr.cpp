@@ -1022,7 +1022,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
 
   no_data = -9999; //TODO: This cannot always be NoData.
 
-  for(unsigned int i=0;i<geodata.size();i++)
+  for(uint64_t i=0;i<geodata.size();i++)
     if(geodata[i]==*translated_arc_no_data)
       geodata[i] = no_data;
     else if(geodata[i]==0) //TODO: Surely this is not always NoData?
@@ -1093,9 +1093,10 @@ void RasterData<T>::getDimensionsFromData(std::string filename, const RasterBase
 
 
 template<class T>
-void RasterData<T>::resize(int width, int height, T no_data_val){
+void RasterData<T>::resize(int64_t width, int64_t height, T no_data_val){
   this->width  = width;
   this->height = height;
+  std::cerr<<"Allocating "<<sizeof(T)<<"x"<<width<<"x"<<height<<" = "<<(sizeof(T)*width*height)<<std::endl;
   geodata.resize(width*height);
   std::fill(geodata.begin(), geodata.end(), no_data_val);
 }
@@ -1107,12 +1108,12 @@ bool RasterData<T>::in_raster(int x, int y) const {
 }
 
 template<class T>
-T& RasterData<T>::operator()(int x, int y){
+T& RasterData<T>::operator()(int64_t x, int64_t y){
   return geodata[y*width+x];
 }
 
 template<class T>
-T RasterData<T>::operator()(int x, int y) const {
+T RasterData<T>::operator()(int64_t x, int64_t y) const {
   return geodata[y*width+x];
 }
 

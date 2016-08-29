@@ -159,10 +159,10 @@ class RasterData : public BaseTable {
   std::string projection;
   int width;
   int height;
-  void resize(int width, int height, T no_data_val);
+  void resize(int64_t width, int64_t height, T no_data_val);
   bool in_raster(int x, int y) const;
-  T& operator()(int x, int y);
-  T  operator()(int x, int y) const;
+  T& operator()(int64_t x, int64_t y);
+  T  operator()(int64_t x, int64_t y) const;
   void setAll(T val);
 
   GDALDataType myGDALType() const {
