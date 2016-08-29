@@ -960,7 +960,9 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
         //check should be fairly robust, though, since we expect some degree of
         //compression for any non-pathological data.
         if(val[0]==120 && val[1]==156 && val.size()<rb.block_width*rb.block_height*sizeof(T)){ 
-          //std::cerr<<"Strong evidence for zlib compression. Running with it."<<std::endl;
+          #ifdef EXPLORE
+            std::cerr<<"Decompressing with zlib"<<std::endl;
+          #endif
           std::vector<uint8_t> decompressed(1000000);
           Zinflate(val, decompressed);
           decompressed.resize(sizeof(T)*rb.block_width*rb.block_height); //Drop trailer
@@ -974,7 +976,9 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
           #endif
 
         } else {
-          //std::cerr<<"Assuming uncompressed data."<<std::endl;
+          #ifdef EXPLORE
+            std::cerr<<"Assuming uncompressed data"<<std::endl;
+          #endif
           unpacked = Unpack<T>(val, rb.block_width, rb.block_height);
         }
 
