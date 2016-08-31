@@ -9,7 +9,11 @@
 #include <vector>
 #include <bitset>
 #include <limits>
+#include <cassert>
 #include "arr.hpp"
+
+#include <cstdio>
+#include <jpeglib.h>
 
 void bitsetToString(const std::vector< uint8_t > &bs){
   for(const auto &v: bs){
@@ -163,6 +167,137 @@ void Zinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
   inflateEnd(&strm);
   dst.resize(ret);
 }
+
+//Based on "memdjpeg" by Kenneth Finnegan (2012, blog.thelifeofkenneth.com)
+void JPEGinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst){
+  assert(src.size()>0);
+  
+  uint8_t      prevbyte = src[0];
+  unsigned int jpegstart;
+
+  for(jpegstart=1;jpegstart<src.size();jpegstart++)
+    if(prevbyte==0xFF && src[jpegstart]==0xD8)
+      break;
+    else
+      prevbyte = src[jpegstart];
+
+  jpegstart -= 1;
+
+  #ifdef EXPLORE
+    std::cerr<<"JPEG BLOB header: ";
+    for(unsigned int i=0;i<jpegstart;i++)
+      std::cerr<<std::hex<<(int)src[i]<<std::dec<<" ";
+    std::cerr<<std::endl;
+  #endif
+
+  src.erase(src.begin(),src.begin()+jpegstart);
+
+  //SETUP   
+
+  // Variables for the decompressor itself
+  struct jpeg_decompress_struct cinfo;
+  struct jpeg_error_mgr jerr;
+
+  //START
+
+  // Allocate a new decompress struct, with the default error handler.
+  // The default error handler will exit() on pretty much any issue,
+  // so it's likely you'll want to replace it or supplement it with
+  // your own.
+  cinfo.err = jpeg_std_error(&jerr);  
+  jpeg_create_decompress(&cinfo);
+
+
+  // Configure this decompressor to read its data from a memory 
+  // buffer starting at unsigned char *jpg_buffer, which is jpg_size
+  // long, and which must contain a complete jpg already.
+  //
+  // If you need something fancier than this, you must write your 
+  // own data source manager, which shouldn't be too hard if you know
+  // what it is you need it to do. See jpeg-8d/jdatasrc.c for the 
+  // implementation of the standard jpeg_mem_src and jpeg_stdio_src 
+  // managers as examples to work from.
+  jpeg_mem_src(&cinfo, src.data(), src.size());
+
+  // Have the decompressor scan the jpeg header. This won't populate
+  // the cinfo struct output fields, but will indicate if the
+  // jpeg is valid.
+  int rc = jpeg_read_header(&cinfo, TRUE);
+  if (rc != 1)
+    throw std::runtime_error("File does not seem to be a normal JPEG");
+
+  // By calling jpeg_start_decompress, you populate cinfo
+  // and can then allocate your output bitmap buffers for
+  // each scanline.
+  jpeg_start_decompress(&cinfo);
+  
+  int width      = cinfo.output_width;
+  int height     = cinfo.output_height;
+  int pixel_size = cinfo.output_components;
+
+  std::cerr<<"width: "<<width<<std::endl;
+  std::cerr<<"height: "<<height<<std::endl;
+  std::cerr<<"pixel_size: "<<pixel_size<<std::endl;
+
+  uint64_t bmp_size = width * height * pixel_size;
+  dst.resize(bmp_size);
+
+  // The row_stride is the total number of bytes it takes to store an
+  // entire scanline (row). 
+  const int row_stride = width * pixel_size;
+
+
+  // Now that you have the decompressor entirely configured, it's time
+  // to read out all of the scanlines of the jpeg.
+  //
+  // By default, scanlines will come out in RGBRGBRGB...  order, 
+  // but this can be changed by setting cinfo.out_color_space
+  //
+  // jpeg_read_scanlines takes an array of buffers, one for each scanline.
+  // Even if you give it a complete set of buffers for the whole image,
+  // it will only ever decompress a few lines at a time. For best 
+  // performance, you should pass it an array with cinfo.rec_outbuf_height
+  // scanline buffers. rec_outbuf_height is typically 1, 2, or 4, and 
+  // at the default high quality decompression setting is always 1.
+  while (cinfo.output_scanline < cinfo.output_height) {
+    uint8_t *buffer_array[1];
+    buffer_array[0] = dst.data() + cinfo.output_scanline * row_stride;
+
+    jpeg_read_scanlines(&cinfo, buffer_array, 1);
+  }
+
+
+  // Once done reading *all* scanlines, release all internal buffers,
+  // etc by calling jpeg_finish_decompress. This lets you go back and
+  // reuse the same cinfo object with the same settings, if you
+  // want to decompress several jpegs in a row.
+  //
+  // If you didn't read all the scanlines, but want to stop early,
+  // you instead need to call jpeg_abort_decompress(&cinfo)
+  jpeg_finish_decompress(&cinfo);
+
+  // At this point, optionally go back and either load a new jpg into
+  // the jpg_buffer, or define a new jpeg_mem_src, and then start 
+  // another decompress operation.
+  
+  // Once you're really really done, destroy the object to free everything
+  jpeg_destroy_decompress(&cinfo);
+
+  //DONE
+  
+  // Write the decompressed bitmap out to a ppm file, just to make sure 
+  // it worked. 
+  // fd = open("output.ppm", O_CREAT | O_WRONLY, 0666);
+  // char buf[1024];
+
+  // rc = sprintf(buf, "P6 %d %d 255\n", width, height);
+  // write(fd, buf, rc); // Write the PPM image header before data
+  // write(fd, bmp_buffer, bmp_size); // Write out all RGB pixel data
+
+  // close(fd);
+  // free(bmp_buffer);
+}
+
 
 
 //TODO: The following assumes that data is always stored in big endian order.
@@ -951,6 +1086,10 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
           continue;
 
         #ifdef EXPLORE
+          std::cerr<<"row_nbr="<<row_nbr<<" col_nbr="<<col_nbr<<std::endl;
+        #endif
+
+        #ifdef EXPLORE
           std::cerr<<"Length = "<<val.size()<<std::endl;
 
           std::cerr<<"Compressed: ";
@@ -986,6 +1125,24 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
               std::cout<<std::hex<<(int)decompressed[i]<<std::dec<<" ";
             std::cout<<"\n";
           #endif
+        } else if(rb.compression_type=="jpeg"){
+          #ifdef EXPLORE
+            std::cerr<<"Decompressing with JPEG"<<std::endl;
+          #endif
+
+          std::cerr<<"Warning: JPEG decompression is not fully functional yet, though it appears to be."<<std::endl;
+
+          std::vector<uint8_t> decompressed;
+          JPEGinflate(val, decompressed);
+
+          #ifdef EXPLORE
+            std::cerr<<"Decompressed size: "<<decompressed.size()<<std::endl;
+          #endif
+
+          unpacked.resize(decompressed.size());
+          std::copy(decompressed.begin(), decompressed.end(), unpacked.begin());
+
+          //unpacked = Unpack<T>(decompressed, rb.block_width, rb.block_height);
 
         } else if(rb.compression_type=="uncompressed") {
           #ifdef EXPLORE
@@ -1003,6 +1160,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
 
         #ifdef EXPLORE
           std::cout<<"Unpacked: ";
+          assert(unpacked.size()>=10);
           for(unsigned int i=0;i<10;i++)
             std::cout<<unpacked[i]<<" ";
           std::cout<<"\n";
