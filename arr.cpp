@@ -1002,9 +1002,13 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
         }
 
         #ifdef EXPLORE
+          assert(unpacked.size()>=10);
           std::cout<<"Unpacked: ";
           for(unsigned int i=0;i<10;i++)
-            std::cout<<unpacked[i]<<" ";
+            if(std::is_same<T,uint8_t>::value || std::is_same<T,int8_t>::value)
+              std::cout<<(int)unpacked[i]<<" ";
+            else
+              std::cout<<unpacked[i]<<" ";
           std::cout<<"\n";
         #endif
 
@@ -1152,6 +1156,10 @@ void RasterData<T>::setAll(T val){
 
 template<class T>
 void ExportTypedRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname){
+  #if EXPLORE
+    std::cerr<<"Using internal datatype '"<<typeid(T).name()<<"'. Use 'c++filt -t' to decode."<<std::endl;
+  #endif
+
   BaseTable        bt(basename+hexify(raster_num));
   RasterBase       rb(basename+hexify(raster_num+4)); //Get the fras_bnd file
   RasterProjection rp(basename+hexify(raster_num+1));
