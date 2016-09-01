@@ -1130,7 +1130,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
             std::cerr<<"Decompressing with JPEG"<<std::endl;
           #endif
 
-          std::cerr<<"Warning: JPEG decompression is not fully functional yet, though it appears to be."<<std::endl;
+          std::cerr<<"Warning: JPEG decompression is not fully functional yet: it creates artefacts where there shouldn't be any."<<std::endl;
 
           std::vector<uint8_t> decompressed;
           JPEGinflate(val, decompressed);
@@ -1162,7 +1162,10 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
           std::cout<<"Unpacked: ";
           assert(unpacked.size()>=10);
           for(unsigned int i=0;i<10;i++)
-            std::cout<<unpacked[i]<<" ";
+            if(std::is_same<T,uint8_t>::value || std::is_same<T,int8_t>::value)
+              std::cout<<(int)unpacked[i]<<" ";
+            else
+              std::cout<<unpacked[i]<<" ";
           std::cout<<"\n";
         #endif
 
@@ -1310,6 +1313,10 @@ void RasterData<T>::setAll(T val){
 
 template<class T>
 void ExportTypedRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname){
+  #if EXPLORE
+    std::cerr<<"Using internal datatype '"<<typeid(T).name()<<"'. Use 'c++filt -t' to decode."<<std::endl;
+  #endif
+
   BaseTable        bt(basename+hexify(raster_num));
   RasterBase       rb(basename+hexify(raster_num+4)); //Get the fras_bnd file
   RasterProjection rp(basename+hexify(raster_num+1));
