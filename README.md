@@ -31,6 +31,8 @@ To compile run:
 Edit the makefile to include the `-DEXPLORE` flag to print additional
 information useful for development to stderr as the program runs.
 
+An executable called `arc_raster.exe` is produced.
+
 TODO
 ====
 
