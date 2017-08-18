@@ -11,6 +11,10 @@
 #include <limits>
 #include "arr.hpp"
 
+////////////////////////////////////////////////////////////
+//UTILITY FUNCTIONS FOR READING AND MANIPULATING BINARY DATA
+
+
 void bitsetToString(const std::vector< uint8_t > &bs){
   for(const auto &v: bs){
     std::bitset<8> t(v);
@@ -24,7 +28,6 @@ std::string hexify(int raster_num){
   ss << "a" << std::setfill('0') << std::setw(8) << std::hex << raster_num << ".gdbtable";
   return ss.str();
 }
-
 
 template<class T>
 T ReadThing(std::ifstream &fin){
@@ -101,17 +104,6 @@ void GotoPosition(std::ifstream &fin, int64_t pos){
   fin.seekg(pos);
 }
 
-
-
-void Field::print() const {
-  std::cout<<"Name     = "<<name      <<"\n"
-           <<"Alias    = "<<alias     <<"\n"
-           <<"Type     = "<<(int)type <<"\n"
-           <<"Nullable = "<<nullable  <<"\n";
-}
-
-
-
 std::string GetString(std::ifstream &fin, int nbcar=-1){
   std::string temp;
 
@@ -132,6 +124,14 @@ int32_t GetCount(std::ifstream &fin){
 }
 
 
+
+
+
+
+
+
+//////////////////////////////////////////////////////////
+//Deal with compressed data
 
 void Zinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
   z_stream strm  = {0};
@@ -165,8 +165,30 @@ void Zinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
 }
 
 
-//TODO: The following assumes that data is always stored in big endian order.
-//This should be confirmed.
+
+
+
+
+
+
+
+
+
+void Field::print() const {
+  std::cout<<"Name     = "<<name      <<"\n"
+           <<"Alias    = "<<alias     <<"\n"
+           <<"Type     = "<<(int)type <<"\n"
+           <<"Nullable = "<<nullable  <<"\n";
+}
+
+
+
+
+
+
+
+//NOTE: The following assumes that data is always stored in big endian order.
+//      This should be confirmed.
 template<class T>
 std::vector<T> Unpack(std::vector<uint8_t> &packed, const int block_width, const int block_height){
   std::vector<T> output(block_width*block_height);
@@ -323,17 +345,17 @@ BaseTable::BaseTable(std::string filename){
       auto magic_byte1 = ReadByte(gdbtable);
       auto magic_byte2 = ReadByte(gdbtable);
       field.nullable   = false;
-    } else if(field.type==7){ //Shape
-      auto magic_byte1 = ReadByte(gdbtable); //0
-      auto flag =  ReadByte(gdbtable);       //6 or 7
+    } else if(field.type==7){ //Shape (NOTE: This is not like a shapefile, it's more like a single outline.)
+      const auto magic_byte1 = ReadByte(gdbtable); //0
+      const auto flag        = ReadByte(gdbtable);       //6 or 7
+
       if( (flag & 1)==0 )
         field.nullable = false;
 
+      const auto wkt_len = GetCount(gdbtable);
+      field.shape.wkt    = GetString(gdbtable, wkt_len/2);
 
-      auto wkt_len = GetCount(gdbtable);
-      field.shape.wkt = GetString(gdbtable, wkt_len/2);
-
-      auto magic_byte3 = ReadByte(gdbtable);
+      const auto magic_byte3 = ReadByte(gdbtable);
 
       field.shape.has_m = false;
       field.shape.has_z = false;
@@ -348,11 +370,11 @@ BaseTable::BaseTable(std::string filename){
       field.shape.yorig   = ReadFloat64(gdbtable);
       field.shape.xyscale = ReadFloat64(gdbtable);
       if(field.shape.has_m){
-        field.shape.morig = ReadFloat64(gdbtable);
+        field.shape.morig  = ReadFloat64(gdbtable);
         field.shape.mscale = ReadFloat64(gdbtable);
       }
       if(field.shape.has_z){
-        field.shape.zorig = ReadFloat64(gdbtable);
+        field.shape.zorig  = ReadFloat64(gdbtable);
         field.shape.zscale = ReadFloat64(gdbtable);
       }
       field.shape.xytolerance = ReadFloat64(gdbtable);
@@ -366,6 +388,7 @@ BaseTable::BaseTable(std::string filename){
       field.shape.xmax = ReadFloat64(gdbtable);
       field.shape.ymax = ReadFloat64(gdbtable);
 
+      //TODO: What is this doing?
       while(true){
         auto read5 = ReadBytes(gdbtable,5);
         if(read5[0]!=0 || (read5[1]!=1 && read5[1]!=2 && read5[1]!=3) || read5[2]!=0 || read5[3]!=0 || read5[4]!=0){
@@ -379,32 +402,32 @@ BaseTable::BaseTable(std::string filename){
       }
 
     } else if(field.type==4){ //String
-      auto width = ReadInt32(gdbtable);
-      auto flag = ReadByte(gdbtable);
+      const auto width = ReadInt32(gdbtable);
+      const auto flag  = ReadByte(gdbtable);
       if( (flag&1)==0 )
         field.nullable = false;
-      auto default_value_length = ReadVarUint(gdbtable);
+      const auto default_value_length = ReadVarUint(gdbtable);
       if( (flag&4)!=0 && default_value_length>0){
         //auto default_value = ;
         AdvanceBytes(gdbtable, default_value_length);
       }
 
-    } else if(field.type==8){
+    } else if(field.type==8){ //TODO: What is this?
       AdvanceBytes(gdbtable,1);
-      auto flag = ReadByte(gdbtable);
+      const auto flag = ReadByte(gdbtable);
       if( (flag&1)==0 )
         field.nullable = false;
 
     } else if(field.type==9) { //Raster
       AdvanceBytes(gdbtable,1);
-      auto flag = ReadByte(gdbtable);
+      const auto flag = ReadByte(gdbtable);
       if( (flag & 1)==0 )
         field.nullable = false;
 
       field.raster.raster_column = GetString(gdbtable);
 
-      auto wkt_len     = GetCount(gdbtable);
-      field.raster.wkt = GetString(gdbtable,wkt_len/2);
+      const auto wkt_len = GetCount(gdbtable);
+      field.raster.wkt   = GetString(gdbtable,wkt_len/2);
 
       #ifdef EXPLORE
         std::cerr<<"WKT: "<<field.raster.wkt<<std::endl;
@@ -412,14 +435,15 @@ BaseTable::BaseTable(std::string filename){
 
       //f.read(82) //TODO: Was like this in source.
 
-      auto magic_byte3 = ReadByte(gdbtable);
+      const auto magic_byte3 = ReadByte(gdbtable);
 
       if(magic_byte3>0){
         field.raster.raster_has_m = false;
         field.raster.raster_has_z = false;
-        if(magic_byte3==5)
+
+        if(magic_byte3==5){
           field.raster.raster_has_z = true;
-        if(magic_byte3==7){
+        } else if(magic_byte3==7){
           field.raster.raster_has_m = true;
           field.raster.raster_has_z = true;
         }
@@ -448,18 +472,19 @@ BaseTable::BaseTable(std::string filename){
       AdvanceBytes(gdbtable,1);
 
     } else if(field.type==11 || field.type==10 || field.type==12){ //UUID or XML
-      auto width         = ReadByte(gdbtable);
-      auto flag          = ReadByte(gdbtable);
+      const auto width = ReadByte(gdbtable);
+      const auto flag  = ReadByte(gdbtable);
       if( (flag&1)==0 )
         field.nullable = false;
     } else {
-      auto width    = ReadByte(gdbtable);
-      auto flag     = ReadByte(gdbtable);
+      const auto width    = ReadByte(gdbtable);
+      const auto flag     = ReadByte(gdbtable);
       if( (flag&1)==0 )
         field.nullable = false;
 
-      auto default_value_length = ReadByte(gdbtable);
+      const auto default_value_length = ReadByte(gdbtable);
 
+      //TODO: What is this?
       if( (flag&4)!=0 ){
         if(field.type==0 && default_value_length==2)
           auto default_value = ReadInt16(gdbtable);
@@ -498,14 +523,14 @@ MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
   #endif
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
-    auto feature_offset = ReadInt32(gdbtablx);
+    const auto feature_offset = ReadInt32(gdbtablx);
 
     if(feature_offset==0)
       continue;
 
     GotoPosition(gdbtable, feature_offset);
 
-    auto blob_len = ReadInt32(gdbtable);
+    const auto blob_len = ReadInt32(gdbtable);
 
     getFlags();
 
@@ -515,13 +540,13 @@ MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
         continue;
 
       if(fields[fi].type==1){
-        auto val = ReadInt32(gdbtable);
+        const auto val = ReadInt32(gdbtable);
       } else if(fields[fi].type == 10 || fields[fi].type == 11){ //10=DatasetGUID
-        auto val = ReadBytes(gdbtable, 16);
+        const auto val = ReadBytes(gdbtable, 16);
       } else if(fields[fi].type == 4 || fields[fi].type == 12){  //String
-        auto length = ReadVarUint(gdbtable);
-        auto val    = ReadBytesAsString(gdbtable, length);
-        auto loc    = val.find("fras_ras_");
+        const auto length = ReadVarUint(gdbtable);
+        const auto val    = ReadBytesAsString(gdbtable, length);
+        const auto loc    = val.find("fras_ras_");
         #ifdef EXPLORE
           std::cerr<<"\t"<<val<<" - "<<hexify(f+1)<<"\n";
         #endif
@@ -586,14 +611,14 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
 
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
-    auto feature_offset = ReadInt32(gdbtablx);
+    const auto feature_offset = ReadInt32(gdbtablx);
 
     if(feature_offset==0)
       continue;
 
     GotoPosition(gdbtable, feature_offset);
 
-    auto blob_len = ReadInt32(gdbtable);
+    const auto blob_len = ReadInt32(gdbtable);
 
     getFlags();
 
@@ -631,10 +656,10 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
           AdvanceBytes(gdbtable, 4);
 
       } else if(fields[fi].type == 4 || fields[fi].type == 12){
-        auto length = ReadVarUint(gdbtable);
-        auto val    = ReadBytes(gdbtable, length);
+        const auto length = ReadVarUint(gdbtable);
+        const auto val    = ReadBytes(gdbtable, length);
       } else if(fields[fi].type==3){
-        auto val = ReadFloat64(gdbtable);
+        const auto val = ReadFloat64(gdbtable);
         if(fields[fi].name=="block_origin_x")
           block_origin_x=val;
         else if(fields[fi].name=="block_origin_y")
@@ -1097,14 +1122,14 @@ void RasterData<T>::getDimensionsFromData(std::string filename, const RasterBase
         else if(fields[fi].name=="rrd_factor")
           rrd_factor = val;
       } else if(fields[fi].type == 4 || fields[fi].type == 12){
-        auto length = ReadVarUint(gdbtable);
-        auto val    = ReadBytes(gdbtable, length);
+        const auto length = ReadVarUint(gdbtable);
+        const auto val    = ReadBytes(gdbtable, length);
       } else if(fields[fi].type==8){ //Appears to be where raster data is stored
         if(rrd_factor!=0)
           continue;
 
-        int px = col_nbr*rb.block_width;
-        int py = row_nbr*rb.block_height;
+        const int px = col_nbr*rb.block_width;
+        const int py = row_nbr*rb.block_height;
 
         minpx = std::min(minpx,px);
         minpy = std::min(minpy,py);
