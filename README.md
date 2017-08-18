@@ -34,6 +34,8 @@ information useful for development to stderr as the program runs.
 TODO
 ====
 
+* **Turn this into a GDAL driver.**
+
 *Improve endian checking.
 
 *Check for other kinds of compressions.
@@ -43,6 +45,7 @@ TODO
 *Improve geotransform calculations.
 
 *Switch some identification strings to ENUM values so things run quicker
+
 
 Credits
 =======
