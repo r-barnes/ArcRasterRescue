@@ -1,6 +1,8 @@
 ArcRasterRescue
 ===============
 
+**Seeking someone knowledgeable in the ways of crafting GDAL drivers to help with that part of the effort.**
+
 The enclosed program extracts (rescues!) raster data from an ArcGIS File
 Geodatabase into a GeoTIFF file.
 
