@@ -67,6 +67,17 @@ int32_t ReadInt32(std::ifstream &fin){
   #endif
 }
 
+uint64_t ReadIndex40(std::ifstream& fin){
+  #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+  uint64_t value = ReadThing<uint32_t>(fin);
+  uint64_t byte5 = ReadThing<uint8_t>(fin);
+  value |= (byte5 << 32);
+  return value;
+  #else
+  #pragma message "Big-endian unimplemented"
+  #endif
+}
+
 float ReadFloat32(std::ifstream &fin){
   #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     return ReadThing<float>(fin);
@@ -523,7 +534,7 @@ MasterTable::MasterTable(std::string filename) : BaseTable(filename) {
   #endif
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
-    const auto feature_offset = ReadInt32(gdbtablx);
+    const auto feature_offset = ReadIndex40(gdbtablx);
 
     if(feature_offset==0)
       continue;
@@ -611,7 +622,7 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
 
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
-    const auto feature_offset = ReadInt32(gdbtablx);
+    const auto feature_offset = ReadIndex40(gdbtablx);
 
     if(feature_offset==0)
       continue;
@@ -927,7 +938,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
 
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
-    auto feature_offset = ReadInt32(gdbtablx);
+    auto feature_offset = ReadIndex40(gdbtablx);
 
     if(feature_offset==0)
       continue;
@@ -1093,7 +1104,7 @@ void RasterData<T>::getDimensionsFromData(std::string filename, const RasterBase
 
   for(int f=0;f<nfeaturesx;f++){
     GotoPosition(gdbtablx, 16 + f * size_tablx_offsets);
-    auto feature_offset = ReadInt32(gdbtablx);
+    auto feature_offset = ReadIndex40(gdbtablx);
 
     if(feature_offset==0)
       continue;
