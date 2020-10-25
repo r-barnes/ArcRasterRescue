@@ -204,7 +204,7 @@ class RasterData : public BaseTable {
       std::cerr<<"Could not open GDAL driver!"<<std::endl;
       throw std::runtime_error("Could not open GDAL driver!");
     }
-    GDALDataset *fout    = poDriver->Create(filename.c_str(), width, height, 1, myGDALType(), papszOptions);
+    GDALDataset *fout = poDriver->Create(filename.c_str(), width, height, 1, myGDALType(), papszOptions);
     if(fout==NULL){
       std::cerr<<"Could not open file '"<<filename<<"' for GDAL save!"<<std::endl;
       throw std::runtime_error("Could not open file for GDAL save!");

@@ -41,17 +41,12 @@ An executable called `arc_raster.exe` is produced.
 TODO
 ====
 
-* **Turn this into a GDAL driver.**
-
-*Improve endian checking.
-
-*Check for other kinds of compressions.
-
-*Improve calculation of raster dimensions.
-
-*Improve geotransform calculations.
-
-*Switch some identification strings to ENUM values so things run quicker
+ * **Turn this into a GDAL driver.**
+ *Improve endian checking.
+ *Check for other kinds of compressions.
+ *Improve calculation of raster dimensions.
+ *Improve geotransform calculations: they're kind of experimental at the moment.
+ *Switch some identification strings to ENUM values so things run quicker
 
 
 Credits

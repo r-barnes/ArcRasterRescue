@@ -689,13 +689,26 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
     }
   }
 
+  //Try to construct a geotransform. These have the form
+  //  Xgeo = GT(0) + Xpixel*GT(1) + Yline*GT(2)
+  //  Ygeo = GT(3) + Xpixel*GT(4) + Yline*GT(5)
+  //where, in case of north up images, the GT(2) and GT(4) coefficients are
+  //zero, and the GT(1) is pixel width, and GT(5) is pixel height. The
+  //(GT(0),GT(3)) position is the top left corner of the top left pixel of the
+  //raster.
+
   //TODO: This is not guaranteed to be correct
   geotransform[0] = eminx;
-  geotransform[1] = std::round((emaxx-eminx)/band_width);
+  geotransform[1] = ((emaxx-eminx)/(double)band_width);
   geotransform[2] = 0;
   geotransform[3] = emaxy;
   geotransform[4] = 0;
-  geotransform[5] = -std::round((emaxy-eminy)/band_height); //Arc really doesn't seem to like rasters with this value positive.
+  geotransform[5] = -((emaxy-eminy)/(double)band_height); //Arc really doesn't seem to like rasters with this value positive.
+
+  std::cerr<<"Using geotransform (this is experimental): ";
+  for(const auto &x: geotransform)
+    std::cerr<<std::fixed<<std::setprecision(20)<<x<<" ";
+  std::cerr<<std::endl;
 }
 
 /*
@@ -1222,7 +1235,7 @@ void ExportTypedRasterToGeoTIFF(std::string operation, std::string basename, int
 
   rd.geotransform = rb.geotransform;
 
-  rd.save(outputname.c_str(),operation,false);
+  rd.save(outputname, operation, false);
 }
 
 void ExportRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname){
