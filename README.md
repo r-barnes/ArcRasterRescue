@@ -22,6 +22,11 @@ Requirements
 * [C++11](https://en.wikipedia.org/wiki/C%2B%2B11)
 * [zlib](http://www.zlib.net/)
 * [GDAL](http://www.gdal.org/)
+* [Cmake](https://cmake.org/)
+
+On an Ubuntu/Debian system you can obtain these with:
+
+    sudo apt install cmake libgdal-dev zlib1g-dev g++
 
 Compilation
 ===========
