@@ -8,11 +8,11 @@ Geodatabase into a GeoTIFF file.
 
 List the numbers and names of rasters in the geodatabase using
 
-    ./arc_raster.exe <path/to/geodatabase.gdb/>
+    ./arc_raster_rescue.exe <path/to/geodatabase.gdb/>
 
 Extract to a GeoTIFF using
 
-    ./arc_raster.exe <path/to/geodatabase.gdb/> <RASTER NUM> <OUTPUT FILE>
+    ./arc_raster_rescue.exe <path/to/geodatabase.gdb/> <RASTER NUM> <OUTPUT FILE>
 
 The geodatabase path must end with a slash!
 
@@ -36,7 +36,7 @@ To compile use the standard cmake sequence:
 Add `-DEXPLORE=ON` to print additional information useful for development to
 stderr as the program runs.
 
-An executable called `arc_raster.exe` is produced.
+An executable called `arc_raster_rescue.exe` is produced.
 
 TODO
 ====
