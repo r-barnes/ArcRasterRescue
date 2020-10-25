@@ -1,15 +1,17 @@
+#include <arc_raster_rescue/arc_raster_rescue.hpp>
+
 #include <zlib.h>
-#include <type_traits>
+
+#include <bitset>
 #include <cstring>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
-#include <iomanip>
-#include <fstream>
-#include <iostream>
+#include <type_traits>
 #include <vector>
-#include <bitset>
-#include <limits>
-#include "arr.hpp"
 
 ////////////////////////////////////////////////////////////
 //UTILITY FUNCTIONS FOR READING AND MANIPULATING BINARY DATA
@@ -697,16 +699,16 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
 }
 
 /*
-1_bit           0 4 8  0 00000000 00000100 00001000 00000000 
-4_bit           0 4 20 0 00000000 00000100 00100000 00000000 
-8_bit_signed    0 4 41 0 00000000 00000100 01000001 00000000 
+1_bit           0 4 8  0 00000000 00000100 00001000 00000000
+4_bit           0 4 20 0 00000000 00000100 00100000 00000000
+8_bit_signed    0 4 41 0 00000000 00000100 01000001 00000000
 8_bit_unsigned  0 4 40 0 00000000 00000100 01000000 00000000
-16_bit_signed   0 4 81 0 00000000 00000100 10000001 00000000 
-16_bit_unsigned 0 4 80 0 00000000 00000100 10000000 00000000 
-32_bit_signed   0 4 1  1 00000000 00000100 00000001 00000001 
-32_bit_float    0 4 2  1 00000000 00000100 00000010 00000001 
-32_bit_unsigned 0 4 0  1 00000000 00000100 00000000 00000001 
-64_bit          0 4 0  2 00000000 00000100 00000000 00000010 
+16_bit_signed   0 4 81 0 00000000 00000100 10000001 00000000
+16_bit_unsigned 0 4 80 0 00000000 00000100 10000000 00000000
+32_bit_signed   0 4 1  1 00000000 00000100 00000001 00000001
+32_bit_float    0 4 2  1 00000000 00000100 00000010 00000001
+32_bit_unsigned 0 4 0  1 00000000 00000100 00000000 00000001
+64_bit          0 4 0  2 00000000 00000100 00000000 00000010
 */
 std::string RasterBase::bandTypeToDataTypeString(std::vector<uint8_t> &band_types) const {
   if(band_types[2]==0x08 && band_types[3]==0x00) //00000000 00000100 00001000 00000000
@@ -737,31 +739,31 @@ std::string RasterBase::bandTypeToDataTypeString(std::vector<uint8_t> &band_type
 
 /*
 uncompressed, float
-band_types = 0 0 2  1 00000000 00000000 00000010 00000001 
+band_types = 0 0 2  1 00000000 00000000 00000010 00000001
 
 LZ77, float32
-band_types = 0 4 2  1 00000000 00000100 00000010 00000001 
+band_types = 0 4 2  1 00000000 00000100 00000010 00000001
 
 JPEG, 75% quality, uint8_t
-band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+band_types = 0 8 40 0 00000000 00001000 01000000 00000000
 
 JPEG, 23% quality, uint8_t
-band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+band_types = 0 8 40 0 00000000 00001000 01000000 00000000
 
 JPEG2000 75% quality, int16_t
-band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+band_types = 0 c 81 0 00000000 00001100 10000001 00000000
 
 JPEG2000 23% quality, int16_t
-band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+band_types = 0 c 81 0 00000000 00001100 10000001 00000000
 */
 std::string RasterBase::bandTypeToCompressionTypeString(std::vector<uint8_t> &band_types) const {
-  if(band_types[1]==0x00) //band_types = 0 0 2  1 00000000 00000000 00000010 00000001 
+  if(band_types[1]==0x00) //band_types = 0 0 2  1 00000000 00000000 00000010 00000001
     return "uncompressed";
-  if(band_types[1]==0x04) //band_types = 0 4 2  1 00000000 00000100 00000010 00000001 
+  if(band_types[1]==0x04) //band_types = 0 4 2  1 00000000 00000100 00000010 00000001
     return "lz77";
-  if(band_types[1]==0x08) //band_types = 0 8 40 0 00000000 00001000 01000000 00000000 
+  if(band_types[1]==0x08) //band_types = 0 8 40 0 00000000 00001000 01000000 00000000
     return "jpeg";
-  if(band_types[1]==0x0C) //band_types = 0 c 81 0 00000000 00001100 10000001 00000000 
+  if(band_types[1]==0x0C) //band_types = 0 c 81 0 00000000 00001100 10000001 00000000
     return "jpeg2000";
 
   std::cerr<<"Unrecognised band compression type!"<<std::endl;
@@ -786,17 +788,17 @@ field = 0
 nbcar = 3
 name = OID
 nbcar_alias = 0
-alias = 
+alias =
 type = 6 (objectid)
 magic1 = 4
 magic2 = 2
-nullable = 0 
+nullable = 0
 
 field = 1
 nbcar = 6
 name = RASTER
 nbcar_alias = 0
-alias = 
+alias =
 type = 9 (raster)
 flag = 5
 nbcar = 13
@@ -814,13 +816,13 @@ xytolerance = 0.001000000000000
 mtolerance = 0.001000000000000
 ztolerance = 0.001000000000000
 1
-nullable = 1 
+nullable = 1
 
 field = 2
 nbcar = 9
 name = FOOTPRINT
 nbcar_alias = 0
-alias = 
+alias =
 type = 7 (geometry)
 magic1 = 0
 flag = 7
@@ -842,29 +844,29 @@ xmax = 428822.000000000000000
 ymax = 4877607.000000003725290
 cur_pos = 2015
 0.0
-nullable = 1 
+nullable = 1
 
 field = 3
 nbcar = 16
 name = FOOTPRINT_Length
 nbcar_alias = 0
-alias = 
+alias =
 type = 3 (float64)
 width = 8
 flag = 3
 default_value_length = 0
-nullable = 1 
+nullable = 1
 
 field = 4
 nbcar = 14
 name = FOOTPRINT_Area
 nbcar_alias = 0
-alias = 
+alias =
 type = 3 (float64)
 width = 8
 flag = 3
 default_value_length = 0
-nullable = 1 
+nullable = 1
 
 ------ROWS (FEATURES)------
 
@@ -907,13 +909,13 @@ RasterProjection::RasterProjection(std::string filename) : BaseTable(filename){
 
 template<class T>
 RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTable(filename){
-  //Determine maximum and minimum pixel coordinates from the data itself, since 
+  //Determine maximum and minimum pixel coordinates from the data itself, since
   //extracting them from the metadata is not yet reliable.
   getDimensionsFromData(filename,rb);
 
   //NOTE: In theory, the dimensions are given by
   //    resize(rb.band_width, rb.band_height, -9999);
-  //However, the pixels themselves seem to have a non-obvious coordinate scheme 
+  //However, the pixels themselves seem to have a non-obvious coordinate scheme
   //which often takes them outside of this area. Therefore, we use
   //getDimensionsFromData() to determine the range
   resize(maxpx-minpx, maxpy-minpy, -9999);
@@ -1007,7 +1009,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
         //field to determine probabilistically if compression is being used. The
         //check should be fairly robust, though, since we expect some degree of
         //compression for any non-pathological data.
-        if(rb.compression_type=="lz77"){ 
+        if(rb.compression_type=="lz77"){
           #ifdef EXPLORE
             std::cerr<<"Decompressing with zlib"<<std::endl;
           #endif
@@ -1082,7 +1084,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
   //was looking at. I don't know if this is consistent across different
   //architectures or not. The following worked on my machine, but may not work
   //on yours. Some careful thinking is needed to improve this section.
-  const uint32_t arc_no_data      = 0xff7fffff; 
+  const uint32_t arc_no_data      = 0xff7fffff;
   const T *translated_arc_no_data = reinterpret_cast<const T*>(&arc_no_data);
 
   no_data = -9999; //TODO: This cannot always be NoData.

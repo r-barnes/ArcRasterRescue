@@ -26,12 +26,15 @@ Requirements
 Compilation
 ===========
 
-To compile run:
+To compile use the standard cmake sequence:
 
+    mkdir build
+    cd build
+    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
     make
 
-Edit the makefile to include the `-DEXPLORE` flag to print additional
-information useful for development to stderr as the program runs.
+Add `-DEXPLORE=ON` to print additional information useful for development to
+stderr as the program runs.
 
 An executable called `arc_raster.exe` is produced.
 

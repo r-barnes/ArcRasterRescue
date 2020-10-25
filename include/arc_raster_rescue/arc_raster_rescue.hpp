@@ -1,14 +1,15 @@
-#ifndef _arr_hpp_
-#define _arr_hpp_
+#pragma once
 
-#include <string>
-#include <fstream>
-#include <vector>
+#include <gdal_priv.h>
+
 #include <algorithm>
-
-#include "gdal_priv.h"
-#include <typeinfo>
+#include <cassert>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <typeinfo>
+#include <vector>
 
 #ifndef GIT_HASH
   #pragma message "Compiling without a git hash!"
@@ -124,7 +125,7 @@ class RasterBase : public BaseTable {
   double      eminx;
   double      eminy;
   double      emaxx;
-  double      emaxy;   
+  double      emaxy;
   double      block_origin_x;
   double      block_origin_y;
   std::string data_type;
@@ -267,5 +268,3 @@ class RasterData : public BaseTable {
 
 
 void ExportRasterToGeoTIFF(std::string operation, std::string basename, int raster_num, std::string outputname);
-
-#endif
