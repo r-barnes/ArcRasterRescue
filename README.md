@@ -42,11 +42,11 @@ TODO
 ====
 
  * **Turn this into a GDAL driver.**
- *Improve endian checking.
- *Check for other kinds of compressions.
- *Improve calculation of raster dimensions.
- *Improve geotransform calculations: they're kind of experimental at the moment.
- *Switch some identification strings to ENUM values so things run quicker
+ * Improve endian checking.
+ * Check for other kinds of compressions.
+ * Improve calculation of raster dimensions.
+ * Improve geotransform calculations: they're kind of experimental at the moment.
+ * Switch some identification strings to ENUM values so things run quicker
 
 
 Credits
