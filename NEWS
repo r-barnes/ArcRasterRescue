@@ -1,0 +1,6 @@
+2020-10-25 (v0.1)
+=================
+
+ * Added NEWS.
+ * Improved geotransform calculations.
+ * Switched to cmake build system.
