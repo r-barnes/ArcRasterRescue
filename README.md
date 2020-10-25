@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/66634837.svg)](https://zenodo.org/badge/latestdoi/66634837)
+
 ArcRasterRescue
 ===============
 
@@ -62,3 +64,12 @@ Credits
 * James Ramm did some exploratory work that resulted in determining that the raster data (at least in cases he tested) had been compressed using zlib. ([Link](http://lists.osgeo.org/pipermail/gdal-dev/2016-July/044761.html))
 
 * Richard Barnes converted code by Even Roualt into C++ as a base for Arc Raster Rescue and, starting from some notes by James Ramm, continued deciphering the format. He reorganized the code extensively to increase its modularity, determined how to connect the various raster tables together, drafted geotransform and WKT projection extraction capabilities, determined how data types were specified, and produced a working executable to extract raster data into GeoTIFFs. He also wrote this paragraph. :-)
+
+
+
+Cite This
+=========
+
+Please cite this software:
+
+    Barnes, Richard. 2020. Arc Raster Rescue. Software. doi: 10.5281/zenodo.4128479.
