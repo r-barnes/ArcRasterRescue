@@ -368,6 +368,10 @@ BaseTable::BaseTable(std::string filename){
       const auto wkt_len = GetCount(gdbtable);
       field.shape.wkt    = GetString(gdbtable, wkt_len/2);
 
+      #ifdef EXPLORE
+        std::cerr<<"field.shape.wkt: "<<field.shape.wkt<<std::endl;
+      #endif
+
       const auto magic_byte3 = ReadByte(gdbtable);
 
       field.shape.has_m = false;
@@ -443,7 +447,7 @@ BaseTable::BaseTable(std::string filename){
       field.raster.wkt   = GetString(gdbtable,wkt_len/2);
 
       #ifdef EXPLORE
-        std::cerr<<"WKT: "<<field.raster.wkt<<std::endl;
+        std::cerr<<"field.raster.wkt: "<<field.raster.wkt<<std::endl;
       #endif
 
       //f.read(82) //TODO: Was like this in source.
@@ -640,7 +644,9 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
       if(skipField(fields[fi], ifield_for_flag_test))
         continue;
 
-      //std::cerr<<"Field name: "<<fields[fi].name<<std::endl;
+      #ifdef EXPLORE
+        std::cerr<<"Field name: "<<fields[fi].name<<std::endl;
+      #endif
 
       if(fields[fi].type==1){
         if(fields[fi].name=="band_types"){
@@ -1001,7 +1007,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
         if(length==0)
           continue;
 
-        #ifdef EXPLORE
+        #ifdef EXPLOREUNPACK
           std::cerr<<"Length = "<<val.size()<<std::endl;
 
           std::cerr<<"Compressed: ";
@@ -1023,7 +1029,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
         //check should be fairly robust, though, since we expect some degree of
         //compression for any non-pathological data.
         if(rb.compression_type=="lz77"){
-          #ifdef EXPLORE
+          #ifdef EXPLOREUNPACK
             std::cerr<<"Decompressing with zlib"<<std::endl;
           #endif
           std::vector<uint8_t> decompressed(1000000);
@@ -1031,7 +1037,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
           decompressed.resize(sizeof(T)*rb.block_width*rb.block_height); //Drop trailer
           unpacked = Unpack<T>(decompressed, rb.block_width, rb.block_height);
 
-          #ifdef EXPLORE
+          #ifdef EXPLOREUNPACK
             std::cout<<"Decompressed: ";
             for(unsigned int i=0;i<10;i++)
               std::cout<<std::hex<<(int)decompressed[i]<<std::dec<<" ";
@@ -1052,7 +1058,7 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
           #endif
         }
 
-        #ifdef EXPLORE
+        #ifdef EXPLOREUNPACK
           assert(unpacked.size()>=10);
           std::cout<<"Unpacked: ";
           for(unsigned int i=0;i<10;i++)
