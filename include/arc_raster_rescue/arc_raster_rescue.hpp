@@ -33,8 +33,7 @@ const std::string program_name = "Arc Raster Rescue";
 ///Richdem vX.X.X (hash=GIT HASH, compiled=COMPILATION DATE TIME)
 const std::string program_identifier = program_name + " (url="+program_url+", hash=" + git_hash + ", compiled="+compilation_datetime + ")";
 
-class RasterFields {
- public:
+struct RasterFields {
   double raster_mtolerance;
   double raster_xytolerance;
   double raster_zorig;
@@ -51,8 +50,7 @@ class RasterFields {
   std::string raster_column;
 };
 
-class Shape {
- public:
+struct Shape {
   double ymax;
   double xmax;
   double xmin;
@@ -72,8 +70,7 @@ class Shape {
   std::string wkt;
 };
 
-class Field {
- public:
+struct Field {
   std::string  name;
   std::string  alias;
   int8_t       type;
