@@ -645,38 +645,52 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
         continue;
 
       #ifdef EXPLORE
-        std::cerr<<"Field name: "<<fields[fi].name<<std::endl;
+        std::cerr<<"Field name (type="<<static_cast<int>(fields[fi].type)<<"): "<<fields[fi].name<<std::endl;
       #endif
 
-      if(fields[fi].type==1){
-        if(fields[fi].name=="band_types"){
-          //auto val = ReadInt32(gdbtable);
-          //std::cerr<<"band_types = "<<val<<std::endl;
-          band_types = ReadBytes(gdbtable, 4);
-          #ifdef EXPLORE
-            std::cerr<<"band_types = ";
-            for(auto v: band_types)
-              std::cerr<<std::hex<<(int)v<<" "<<std::dec;
-            bitsetToString(band_types);
+      if(fields[fi].type==1 && fields[fi].name=="band_types"){
+        //auto val = ReadInt32(gdbtable);
+        //std::cerr<<"band_types = "<<val<<std::endl;
+        band_types = ReadBytes(gdbtable, 4);
+        #ifdef EXPLORE
+          std::cerr<<"band_types = ";
+          for(auto v: band_types)
+            std::cerr<<std::hex<<(int)v<<" "<<std::dec;
+          bitsetToString(band_types);
 
-            std::cerr<<"Detected band data type = "<<data_type<<std::endl;
-          #endif
-          data_type        = bandTypeToDataTypeString(band_types);
-          compression_type = bandTypeToCompressionTypeString(band_types);
-        } else if(fields[fi].name=="block_width")
-          block_width = ReadInt32(gdbtable);
+          std::cerr<<"Detected band data type = "<<data_type<<std::endl;
+        #endif
+        data_type        = bandTypeToDataTypeString(band_types);
+        compression_type = bandTypeToCompressionTypeString(band_types);
+      } else if (fields[fi].type==1) {
+        const auto val = ReadInt32(gdbtable);
+        if(fields[fi].name=="block_width")
+          block_width = val;
         else if(fields[fi].name=="block_height")
-          block_height = ReadInt32(gdbtable);
+          block_height = val;
         else if(fields[fi].name=="band_width"){
-          band_width = ReadInt32(gdbtable);
+          band_width = val;
         } else if(fields[fi].name=="band_height"){
-          band_height = ReadInt32(gdbtable);
-        } else
-          AdvanceBytes(gdbtable, 4);
-
-      } else if(fields[fi].type == 4 || fields[fi].type == 12){
+          band_height = val;
+        } else if(fields[fi].name=="cdate"){
+          cdate = val;
+        } else if(fields[fi].name=="mdate"){
+          mdate = val;
+        } else {
+          std::cerr<<"Skipping field '"<<fields[fi].name<<"'"<<std::endl;
+        }
+        #ifdef EXPLORE
+          std::cerr<<"Field value: "<<val<<std::endl;
+        #endif
+      } else if(fields[fi].type == 4 || fields[fi].type == 12){ //4 is a string, 12 is a UUID/XML
         const auto length = ReadVarUint(gdbtable);
-        const auto val    = ReadBytes(gdbtable, length);
+        const auto val    = ReadBytesAsString(gdbtable, length);
+        if(fields[fi].name=="name"){
+          name = val;
+        }
+        #ifdef EXPLORE
+          std::cerr<<"Field value: '"<<val<<"'"<<std::endl;
+        #endif
       } else if(fields[fi].type==3){
         const auto val = ReadFloat64(gdbtable);
         if(fields[fi].name=="block_origin_x")
@@ -691,6 +705,10 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
           eminy=val;
         else if(fields[fi].name=="emaxy")
           emaxy=val;
+
+        #ifdef EXPLORE
+          std::cerr<<"Field value: "<<val<<std::endl;
+        #endif
       }
     }
   }
@@ -978,6 +996,11 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
 
     uint8_t ifield_for_flag_test = 0;
     for(unsigned int fi=0;fi<fields.size();fi++){
+      //Gets printed many times
+      // #ifdef EXPLORE
+      //   std::cerr<<"Field (type="<<static_cast<int>(fields[fi].type)<<"): "<<fields[fi].name<<std::endl;
+      // #endif
+
       if(skipField(fields[fi], ifield_for_flag_test))
         continue;
 

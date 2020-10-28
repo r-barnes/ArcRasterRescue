@@ -115,18 +115,21 @@ class RasterBase : public BaseTable {
   std::string bandTypeToDataTypeString(std::vector< uint8_t > &band_types) const;
   std::string bandTypeToCompressionTypeString(std::vector<uint8_t> &band_types) const;
  public:
-  int32_t     block_width;
-  int32_t     block_height;
-  int32_t     band_width;
-  int32_t     band_height;
-  double      eminx;
-  double      eminy;
-  double      emaxx;
-  double      emaxy;
+  int32_t     block_width;              //Pixel width of tiles
+  int32_t     block_height;             //Pixel height of tiles
+  int32_t     band_width;               //Pixel width of the band
+  int32_t     band_height;              //Pixel height of the band
+  double      eminx;                    //Minimum X coordinate
+  double      eminy;                    //Minimum Y coordinate
+  double      emaxx;                    //Maximum X coordinate
+  double      emaxy;                    //Maximum Y coordinate
   double      block_origin_x;
   double      block_origin_y;
   std::string data_type;
   std::string compression_type;
+  std::string name;                     //Name of the band
+  int32_t     cdate;                    //Creation date
+  int32_t     mdate;                    //Last modification date
   std::vector< uint8_t > band_types;
   std::array<double,6> geotransform;
 
