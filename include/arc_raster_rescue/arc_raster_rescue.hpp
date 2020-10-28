@@ -171,6 +171,8 @@ class RasterData : public BaseTable {
   GDALDataType myGDALType() const {
     if(typeid(T)==typeid(uint8_t))
       return GDT_Byte;
+    else if(typeid(T)==typeid(int8_t))
+      return GDT_Byte;
     else if(typeid(T)==typeid(uint16_t))
       return GDT_UInt16;
     else if(typeid(T)==typeid(int16_t))
@@ -197,6 +199,10 @@ class RasterData : public BaseTable {
     if(compress){
       papszOptions = CSLSetNameValue( papszOptions, "COMPRESS", "DEFLATE" );
       papszOptions = CSLSetNameValue( papszOptions, "ZLEVEL",   "6" );
+    }
+
+    if(typeid(T)==typeid(int8_t)){
+      papszOptions = CSLSetNameValue( papszOptions, "PIXELTYPE", "SIGNEDBYTE" );
     }
 
     GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
