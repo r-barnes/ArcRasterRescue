@@ -1,0 +1,8 @@
+version: "3.8"
+services:
+  arc_raster_rescue:
+    build: .
+    image: arc_raster_rescue
+    volumes:
+      - .:/home/
+    entrypoint: "/bin/bash"
