@@ -163,13 +163,13 @@ void Zinflate(std::vector<uint8_t> &src, std::vector<uint8_t> &dst) {
   err = inflateInit2(&strm, (15 + 32)); //15 window bits, and the +32 tells zlib to to detect if using gzip or zlib
   if(err!=Z_OK){
     inflateEnd(&strm);
-    throw std::runtime_error("zlib error: "+std::to_string(err));
+    throw std::runtime_error("zlib inflateInit2 error: "+std::to_string(err));
   }
 
   err = inflate(&strm, Z_FINISH);
   if (err!=Z_STREAM_END) {
    inflateEnd(&strm);
-   throw std::runtime_error("zlib error: "+std::to_string(err));
+   throw std::runtime_error("zlib inflate error: "+std::to_string(err));
   }
 
   ret = strm.total_out;
