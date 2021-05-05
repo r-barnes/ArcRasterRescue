@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.5)
 
 project(arc_raster_rescue LANGUAGES CXX)
 
@@ -21,7 +21,7 @@ target_link_libraries(arc_raster_rescue PRIVATE ZLIB::ZLIB ${GDAL_LIBRARY})
 target_compile_options(arc_raster_rescue PRIVATE
   -Wall -pedantic -Wno-unused-variable
 )
-target_compile_features(arc_raster_rescue PRIVATE cxx_std_11)
+target_compile_features(arc_raster_rescue PRIVATE cxx_constexpr)
 target_compile_definitions(arc_raster_rescue PUBLIC
   GIT_HASH=\"${GIT_HASH}\"
   COMPILE_TIME=\"${MY_TIMESTAMP}\"
@@ -39,4 +39,4 @@ target_link_libraries(arc_raster_rescue.exe PRIVATE arc_raster_rescue)
 target_compile_options(arc_raster_rescue.exe PRIVATE
   -Wall -pedantic -Wno-unused-variable
 )
-target_compile_features(arc_raster_rescue.exe PRIVATE cxx_std_11)
+target_compile_features(arc_raster_rescue.exe PRIVATE cxx_constexpr)
