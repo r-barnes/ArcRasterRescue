@@ -723,8 +723,8 @@ RasterBase::RasterBase(std::string filename) : BaseTable(filename) {
   //raster.
 
   //TODO: This is not guaranteed to be correct
-  const double pw = (emaxx-eminx)/(double)(band_width-1);
-  const double ph = (emaxx-eminx)/(double)(band_width-1);
+  const double pw = (emaxx-eminx)/static_cast<double>(band_width-1);
+  const double ph = (emaxx-eminx)/static_cast<double>(band_width-1);
   geotransform[0] = eminx+(pw*0.5);
   geotransform[1] = pw;
   geotransform[2] = 0;
@@ -960,16 +960,15 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
   //getDimensionsFromData() to determine the range
 
   ////////////////////////////////////////
-  // original code here
-  //resize(maxpx-minpx, maxpy-minpy, -9999);
-  ////////////////////////////////////////
+  // Original code (above)
+  //     resize(maxpx-minpx, maxpy-minpy, -9999);
+  // runs, but "shrink wraps" output to non-null data bounding box,
+  // which is "no good" because the exported layers will not be immediately
+  // "stackable". The new resize line below fixes this.
+  resize(rb.band_width, rb.band_height, -9999);
 
-  //////////////////////////////////////////////////////////////////////////////////////////////
-  // Original code (above) runs, but "shrink wraps" output to non-null data bounding box,
-  // which is "no good" because the exported layers will not be immediately "stackable".
-  // Also, there should be an option to export ALL FGDBR raster layers to a single-band GeoTIFF.
-  resize(rb.band_width, rb.band_height, -9999);   
-  
+  // TODO: there should be an option to export ALL FGDBR raster layers to a single-band GeoTIFF.
+
   //NOTE: Calculating pixel coordinates as, e.g., `col_nbr*block_width+x` may
   //yield pixel values that are not in the range [0,band_width). The following
   //offsets seemed close to working on my test data:
@@ -995,37 +994,20 @@ RasterData<T>::RasterData(std::string filename, const RasterBase &rb) : BaseTabl
     std::cout<<"xxx rb.band_width "<<rb.band_width<<std::endl;
     std::cout<<"xxx rb.band_height "<<rb.band_height<<std::endl;
   #endif
-    
+
   const int pw = (rb.emaxx-rb.eminx)/(double)rb.band_width;
   const int ph = (rb.emaxy-rb.eminy)/(double)rb.band_height;
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-  // This is confirmed to work for SPBC dataset (output GeoTIFF perfectly lines up with ESRI GeoTIFF).
-  // Now why do we need this particular tuning factor (+13100, -10000)?
-  // The values are very similar to the values of
-  //   (rb.eminx-rb.block_origin_x)/pixel_width
-  // and
-  //   (rb.emaxy-rb.block_origin_y)/pixel_height
-  // for the SPBC dataset, so there must be a way to compute the correct adjustment factor from these.
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-  // const int xoffset = (int)std::abs((rb.eminx-rb.block_origin_x + 13200 - 100)/pw);
-  // const int yoffset = (int)std::abs((rb.emaxy-rb.block_origin_y -  9900 + 100)/ph);
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // This works pefectly all 22 layers of the following large test dataset
+  // The works pefectly all 22 layers of the following large test dataset
   // https://catalogue.data.gov.bc.ca/dataset/04ad45c3-0fdc-4506-bdb4-252c45a63459
   //
   // Did extensive validation, and output lines up exactly (to pixel level) with ESRI ArcMap GeoTIFF export.
   // There might be an arithmetically simpler way to refactor this, but at least it works.
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  // original code
-  //const int xoffset = -minpx;
-  //const int yoffset = -minpy;
+  const int xoffset = static_cast<int>(std::abs((rb.eminx-rb.block_origin_x-(int)((rb.eminx-rb.block_origin_x)/pw)-pw)/pw));
+  const int yoffset = static_cast<int>(std::abs((rb.emaxy-rb.block_origin_y-(int)((rb.emaxy-rb.block_origin_y)/ph)+pw)/ph));
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  const int xoffset = (int)std::abs((rb.eminx-rb.block_origin_x-(int)((rb.eminx-rb.block_origin_x)/pw)-pw)/pw);
-  const int yoffset = (int)std::abs((rb.emaxy-rb.block_origin_y-(int)((rb.emaxy-rb.block_origin_y)/ph)+pw)/ph);
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////  
 
   #ifdef EXPLORE
     std::cout<<"xxx xoffset "<<xoffset<<std::endl;
