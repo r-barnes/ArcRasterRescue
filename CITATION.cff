@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Barnes"
+  given-names: "Richard"
+  orcid: "https://orcid.org/0000-0002-0204-6040"
+title: "ArcRasterRescue"
+doi: 10.5281/zenodo.4128479
+date-released: 2016-08-29
+url: "https://github.com/r-barnes/ArcRasterRescue"
