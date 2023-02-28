@@ -10,6 +10,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <array>
 
 #ifndef GIT_HASH
   #pragma message "Compiling without a git hash!"
